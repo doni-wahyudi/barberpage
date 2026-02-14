@@ -1,13 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+import midFade from '../assets/lookbook/mid-fade.png';
+import gentleman from '../assets/lookbook/gentleman.png';
+import koreanTwoblock from '../assets/lookbook/korean-twoblock.png';
+import slickedBack from '../assets/lookbook/slicked-back.png';
+import buzzcut from '../assets/lookbook/buzzcut.png';
+import curlyPerm from '../assets/lookbook/curly-perm.png';
+
 const lookbookImages = [
-    { id: 1, title: "Modern Fade", category: "Classic" },
-    { id: 2, title: "Gentleman's Part", category: "Formal" },
-    { id: 3, title: "Two Blockure", category: "Grooming" },
-    { id: 4, title: "Royal Treatment", category: "Experience" },
-    { id: 5, title: "Sharp Edge", category: "Classic" },
-    { id: 6, title: "Textured Crop", category: "Modern" },
+    { id: 1, title: "Modern Mid Fade", category: "Classic", image: midFade },
+    { id: 2, title: "Gentleman's Part", category: "Formal", image: gentleman },
+    { id: 3, title: "Korean Two Block", category: "Modern", image: koreanTwoblock },
+    { id: 4, title: "Sharp Slicked Back", category: "Formal", image: slickedBack },
+    { id: 5, title: "Clean Buzzcut", category: "Classic", image: buzzcut },
+    { id: 6, title: "Textured Curly Perm", category: "Modern", image: curlyPerm },
 ];
 
 const Lookbook = () => {
@@ -40,9 +47,15 @@ const Lookbook = () => {
                             className="relative aspect-square overflow-hidden group border border-[#d4af37]/5"
                         >
                             <div className="absolute inset-0 bg-[#141414] flex items-center justify-center text-[#d4af37]/20 text-xs uppercase tracking-widest font-bold">
-                                Portfolio Space {item.id}
+                                DCUKUR PORTFOLIO
                             </div>
-                            {/* Placeholder for real images */}
+
+                            <img
+                                src={item.image}
+                                alt={item.title}
+                                className="absolute inset-0 w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700"
+                            />
+
                             <motion.div
                                 className="absolute inset-0 bg-black/40 group-hover:bg-black/0 transition-all duration-500 z-10"
                             />
