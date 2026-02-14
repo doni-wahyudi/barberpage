@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Scissors } from 'lucide-react';
 
-const Navbar = ({ onAdminToggle, isAdminView }) => {
+const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -17,7 +17,8 @@ const Navbar = ({ onAdminToggle, isAdminView }) => {
     const navLinks = [
         { name: 'Home', href: '#home' },
         { name: 'Services', href: '#services' },
-        { name: 'About', href: '#about' },
+        { name: 'Schedule', href: '#schedule' },
+        { name: 'Lookbook', href: '#lookbook' },
         { name: 'Booking', href: '#booking' },
     ];
 
@@ -65,6 +66,7 @@ const Navbar = ({ onAdminToggle, isAdminView }) => {
                             <motion.button
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
+                                onClick={onBooking}
                                 className="gold-button !py-2 !px-6 !text-xs"
                             >
                                 Book Now
@@ -113,7 +115,7 @@ const Navbar = ({ onAdminToggle, isAdminView }) => {
                                         {link.name}
                                     </a>
                                 ))}
-                                <button className="gold-button w-full">Book Now</button>
+                                <button onClick={() => { onBooking(); setMobileMenuOpen(false); }} className="gold-button w-full">Book Now</button>
                             </>
                         )}
                     </motion.div>

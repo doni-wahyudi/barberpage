@@ -1,11 +1,8 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
-// Dynamically resolve assets — won't crash if files are missing
-const assetModules = import.meta.glob('../assets/hero-bg.webp', { eager: true, import: 'default' });
-const videoModules = import.meta.glob('../assets/hero-video.mp4', { eager: true, import: 'default' });
-const heroBg = Object.values(assetModules)[0] || null;
-const heroVideo = Object.values(videoModules)[0] || null;
+import heroBg from '../assets/hero-bg.png';
+import heroVideo from '../assets/hero-video.mp4';
 
 const Hero = ({ onBooking }) => {
     const { scrollY } = useScroll();
@@ -19,39 +16,41 @@ const Hero = ({ onBooking }) => {
             {/* Background Image/Video with Parallax */}
             <motion.div
                 style={{ y: bgY }}
-                className="absolute inset-0 z-[-1]"
+                className="absolute inset-0 z-0"
             >
-                <div className="absolute inset-0 bg-black/60 z-10" />
+                {/* Background Image (behind video as fallback) */}
+                {heroBg && (
+                    <img
+                        src={heroBg}
+                        alt="Barbershop Atmosphere"
+                        className="w-full h-full object-cover absolute inset-0"
+                    />
+                )}
 
-                {/* Try Video first, fallback to Image */}
-                <video
-                    autoPlay
-                    muted
-                    loop
-                    playsInline
-                    className="w-full h-full object-cover grayscale opacity-40"
-                    onError={(e) => {
-                        e.target.style.display = 'none';
-                    }}
-                >
-                    <source src={heroVideo} type="video/mp4" />
-                </video>
+                {/* Video overlay (plays on top of image) */}
+                {heroVideo && (
+                    <video
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover absolute inset-0"
+                        onError={(e) => {
+                            e.target.style.display = 'none';
+                        }}
+                    >
+                        <source src={heroVideo} type="video/mp4" />
+                    </video>
+                )}
 
-                <img
-                    src={heroBg}
-                    alt="Barbershop Atmosphere"
-                    className="w-full h-full object-cover grayscale opacity-40 absolute inset-0"
-                    onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.parentNode.classList.add('bg-[#141414]');
-                    }}
-                />
+                {/* Dark overlay for text readability */}
+                <div className="absolute inset-0 bg-black/50 z-[1]" />
             </motion.div>
 
             {/* Background Parallax Element */}
             <motion.div
                 style={{ y: y1 }}
-                className="absolute inset-0 z-0 flex items-center justify-center opacity-10 pointer-events-none"
+                className="absolute inset-0 z-[2] flex items-center justify-center opacity-10 pointer-events-none"
             >
                 <h1 className="serif text-[40vw] font-bold text-white select-none whitespace-nowrap">
                     DCUKUR
@@ -59,7 +58,7 @@ const Hero = ({ onBooking }) => {
             </motion.div>
 
             {/* Main Content */}
-            <div className="relative z-10 text-center px-6">
+            <div className="relative z-[3] text-center px-6">
                 <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}

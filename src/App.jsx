@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Services from './components/Services';
+import LiveSchedule from './components/LiveSchedule';
 import Lookbook from './components/Lookbook';
 import BookingModal from './components/BookingModal';
 import LoadingScreen from './components/LoadingScreen';
@@ -24,9 +25,17 @@ function App() {
         }, 2500);
         return () => clearTimeout(timer);
     }, []);
+    const [bookingData, setBookingData] = useState(null);
 
     // Pass open modal trigger to child components where needed
-    const openBooking = () => setIsBookingOpen(true);
+    const openBooking = () => {
+        setBookingData(null);
+        setIsBookingOpen(true);
+    };
+    const openBookingWithData = (data) => {
+        setBookingData(data);
+        setIsBookingOpen(true);
+    };
 
     return (
         <div className="relative min-h-screen bg-[#0a0a0a] text-white">
@@ -36,20 +45,21 @@ function App() {
 
             {!isLoading && (
                 <>
-                    <Navbar onAdminToggle={() => setIsAdminView(!isAdminView)} isAdminView={isAdminView} />
+                    <Navbar onAdminToggle={() => setIsAdminView(!isAdminView)} isAdminView={isAdminView} onBooking={openBooking} />
                     <main>
                         {isAdminView ? (
                             <AdminPanel />
                         ) : (
                             <>
                                 <Hero onBooking={openBooking} />
-                                <Services />
+                                <Services onSelectService={(service) => openBookingWithData({ service })} />
+                                <LiveSchedule onSelectSlot={(data) => openBookingWithData(data)} />
                                 <Lookbook />
                                 <Testimonials />
                                 <Location />
 
                                 {/* Call to Action Section */}
-                                <section className="py-24 border-t border-[#d4af37]/10 bg-gradient-to-b from-[#0a0a0a] to-[#141414]">
+                                <section id="booking" className="py-24 border-t border-[#d4af37]/10 bg-gradient-to-b from-[#0a0a0a] to-[#141414]">
                                     <div className="max-w-4xl mx-auto px-6 text-center">
                                         <h2 className="serif text-4xl md:text-6xl font-bold mb-8 italic">
                                             Ready to redefine your <span className="text-[#d4af37]">Identity</span>?
@@ -84,7 +94,8 @@ function App() {
 
                     <BookingModal
                         isOpen={isBookingOpen}
-                        onClose={() => setIsBookingOpen(false)}
+                        onClose={() => { setIsBookingOpen(false); setBookingData(null); }}
+                        initialData={bookingData}
                     />
 
                     {/* Global CTA Trigger - Fix Hero/Services buttons by hooking them up if needed, 

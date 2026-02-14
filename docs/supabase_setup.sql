@@ -43,3 +43,16 @@ WITH CHECK (true);
 -- 4. Enable Realtime (Optional)
 -- This allows the admin app to listen for new bookings instantly
 ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
+
+-- 5. Allow anonymous users to view bookings (for live schedule feature)
+CREATE POLICY "Enable limited select for anonymous users"
+ON public.bookings
+FOR SELECT
+TO anon
+USING (true);
+
+-- 6. Unique constraint to prevent double-booking same barber at same date+time
+-- Excludes cancelled bookings so the slot can be rebooked
+CREATE UNIQUE INDEX unique_booking_slot
+ON public.bookings (booking_date, booking_time, barber_name)
+WHERE status != 'cancelled';

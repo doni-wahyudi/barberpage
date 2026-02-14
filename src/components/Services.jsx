@@ -2,45 +2,43 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Scissors, Zap, Crown, Flame } from 'lucide-react';
 
-// Dynamically resolve assets — won't crash if files are missing
-const serviceModules = import.meta.glob('../assets/service-*.webp', { eager: true, import: 'default' });
-const service1 = serviceModules['../assets/service-1.webp'] || null;
-const service2 = serviceModules['../assets/service-2.webp'] || null;
-const service3 = serviceModules['../assets/service-3.webp'] || null;
-const service4 = serviceModules['../assets/service-4.webp'] || null;
+import service1 from '../assets/service-1.png';
+import service2 from '../assets/service-2.png';
+import service3 from '../assets/service-3.png';
+import service4 from '../assets/service-4.png';
 
 const services = [
     {
         icon: <Scissors size={32} />,
         image: service1,
-        title: "Signature Cut",
-        price: "$45",
-        desc: "Precision fade or classic scissor cut tailored to your face shape and hair texture."
+        title: "Mid Fade",
+        price: "Rp. 25.000",
+        desc: "A high-contrast style featuring a sharp fade on the sides and back, transitioning into a voluminous, curly top."
     },
     {
         icon: <Flame size={32} />,
         image: service2,
-        title: "Royal Shave",
-        price: "$35",
-        desc: "Triple-pass hot towel shave with premium essential oils and cold stone finish."
+        title: "Comma Hair",
+        price: "Rp. 25.000",
+        desc: "A medium-length style with wavy hair, parted slightly off-center to create long 'curtain' bangs that frame the face."
     },
     {
         icon: <Crown size={32} />,
         image: service3,
-        title: "The Emperor",
-        price: "$75",
-        desc: "The ultimate package: Haircut, Beard Sculpt, Facial, and Scalp Massage."
+        title: "Buzzcut",
+        price: "Rp. 25.000",
+        desc: "longer, straight hair on top with bangs covering the forehead, while the sides and back are cut shorter."
     },
     {
         icon: <Zap size={32} />,
         image: service4,
-        title: "Beard Sculpt",
-        price: "$25",
-        desc: "Expert sharpening and grooming of your beard using premium balms and oils."
+        title: "Two Block",
+        price: "Rp. 25.000",
+        desc: "longer, straight hair on top with bangs covering the forehead, while the sides and back are cut shorter."
     }
 ];
 
-const Services = () => {
+const Services = ({ onSelectService }) => {
     return (
         <section id="services" className="py-24 bg-[#0a0a0a] relative">
             <div className="max-w-7xl mx-auto px-6">
@@ -93,7 +91,10 @@ const Services = () => {
                                     </p>
                                 </div>
                                 <div className="mt-auto pt-4 border-t border-[#d4af37]/10">
-                                    <button className="text-[10px] uppercase tracking-widest text-[#d4af37] font-bold hover:translate-x-2 transition-transform inline-flex items-center gap-2">
+                                    <button
+                                        onClick={() => onSelectService && onSelectService(service.title)}
+                                        className="text-[10px] uppercase tracking-widest text-[#d4af37] font-bold hover:translate-x-2 transition-transform inline-flex items-center gap-2"
+                                    >
                                         Select Service
                                     </button>
                                 </div>

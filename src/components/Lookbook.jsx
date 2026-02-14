@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 const lookbookImages = [
     { id: 1, title: "Modern Fade", category: "Classic" },
     { id: 2, title: "Gentleman's Part", category: "Formal" },
-    { id: 3, title: "Beard Sculpture", category: "Grooming" },
+    { id: 3, title: "Two Blockure", category: "Grooming" },
     { id: 4, title: "Royal Treatment", category: "Experience" },
     { id: 5, title: "Sharp Edge", category: "Classic" },
     { id: 6, title: "Textured Crop", category: "Modern" },

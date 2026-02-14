@@ -3,15 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, User, Phone, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-const BookingModal = ({ isOpen, onClose }) => {
+const BookingModal = ({ isOpen, onClose, initialData }) => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [bookedSlots, setBookedSlots] = useState([]);
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
-        service: 'Signature Cut',
-        barber: 'Master Aris',
+        service: '',
+        barber: '',
         date: '',
         time: ''
     });
@@ -34,7 +34,6 @@ const BookingModal = ({ isOpen, onClose }) => {
                 .neq('status', 'cancelled');
 
             if (data) {
-                // Formatting time from DB (usually HH:mm:ss) to HH:mm
                 const booked = data.map(b => b.booking_time.substring(0, 5));
                 setBookedSlots(booked);
             }
@@ -42,6 +41,19 @@ const BookingModal = ({ isOpen, onClose }) => {
 
         fetchBookings();
     }, [formData.date, formData.barber, isOpen]);
+
+    // Pre-fill fields when opened with initial data
+    useEffect(() => {
+        if (isOpen && initialData) {
+            setFormData(prev => ({
+                ...prev,
+                service: initialData.service || '',
+                barber: initialData.barber || '',
+                date: initialData.date || '',
+                time: initialData.time || '',
+            }));
+        }
+    }, [initialData, isOpen]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -54,6 +66,23 @@ const BookingModal = ({ isOpen, onClose }) => {
         setLoading(true);
 
         try {
+            // Server-side double-booking check right before insert
+            const { data: existing } = await supabase
+                .from('bookings')
+                .select('id')
+                .eq('booking_date', formData.date)
+                .eq('booking_time', formData.time)
+                .eq('barber_name', formData.barber)
+                .neq('status', 'cancelled')
+                .limit(1);
+
+            if (existing && existing.length > 0) {
+                setBookedSlots(prev => [...prev, formData.time]);
+                alert('Sorry, this slot was just booked by someone else. Please choose another time.');
+                setLoading(false);
+                return;
+            }
+
             const { error } = await supabase
                 .from('bookings')
                 .insert([
@@ -74,7 +103,7 @@ const BookingModal = ({ isOpen, onClose }) => {
             setTimeout(() => {
                 setSuccess(false);
                 onClose();
-                setFormData({ name: '', phone: '', service: 'Signature Cut', barber: 'Master Aris', date: '', time: '' });
+                setFormData({ name: '', phone: '', service: '', barber: '', date: '', time: '' });
             }, 3000);
         } catch (error) {
             console.error('Error booking:', error.message);
@@ -185,24 +214,28 @@ const BookingModal = ({ isOpen, onClose }) => {
                                         </div>
 
                                         <select
+                                            required
                                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
                                             value={formData.service}
                                             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                                         >
-                                            <option>Signature Cut</option>
-                                            <option>Royal Shave</option>
-                                            <option>The Emperor</option>
-                                            <option>Beard Sculpt</option>
+                                            <option value="" disabled>Select Service</option>
+                                            <option value="Mid Fade">Mid Fade</option>
+                                            <option value="Comma Hair">Comma Hair</option>
+                                            <option value="Buzzcut">Buzzcut</option>
+                                            <option value="Two Block">Two Block</option>
                                         </select>
 
                                         <select
+                                            required
                                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
                                             value={formData.barber}
                                             onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
                                         >
-                                            <option>Master Aris</option>
-                                            <option>Senior Budi</option>
-                                            <option>Artisan Catur</option>
+                                            <option value="" disabled>Select Barber</option>
+                                            <option value="Master Aris">Master Aris</option>
+                                            <option value="Senior Budi">Senior Budi</option>
+                                            <option value="Artisan Catur">Artisan Catur</option>
                                         </select>
                                     </div>
 

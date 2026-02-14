@@ -23,7 +23,7 @@ const testimonials = [
         id: 3,
         name: "Budi Pratama",
         role: "Artist",
-        content: "The beard sculpt is world-class. They understand the art of grooming. The gold treatment definitely makes you feel like royalty.",
+        content: "The Two Block is world-class. They understand the art of grooming. The gold treatment definitely makes you feel like royalty.",
         stars: 5,
         avatar: "BP"
     }
