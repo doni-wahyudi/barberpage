@@ -12,7 +12,12 @@ const QueueMonitor = () => {
     const [error, setError] = useState('');
     const [isLate, setIsLate] = useState(false);
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [visitCount, setVisitCount] = useState(1); // Added visitCount state
+    const [visitCount, setVisitCount] = useState(1);
+
+    // Loyalty & Review States
+    const [appSettings, setAppSettings] = useState(null);
+    const [reviewState, setReviewState] = useState({ rating: 0, comment: '', status: 'none', googleClicked: false }); // none, submitting, submitted
+    const [pointsEarned, setPointsEarned] = useState(0);
 
     useEffect(() => {
         const fetchBooking = async () => {
@@ -37,11 +42,19 @@ const QueueMonitor = () => {
                         .eq('phone_number', data.phone_number)
                         .neq('status', 'cancelled'); // Exclude cancelled bookings
 
-                    if (!countError && count !== null) { // count can be 0, so check for null
+                    if (!countError && count !== null) {
                         setVisitCount(count);
-                    } else if (countError) {
-                        console.error('Error fetching visit count:', countError);
                     }
+                }
+
+                // Fetch App Settings for Points
+                const { data: settingsData } = await supabase.from('app_settings').select('*').eq('id', 1).single();
+                if (settingsData) setAppSettings(settingsData);
+
+                // Check if user already reviewed
+                const { data: existingReview } = await supabase.from('reviews').select('*').eq('booking_id', id).single();
+                if (existingReview) {
+                    setReviewState({ rating: existingReview.rating || 0, comment: existingReview.comment || '', status: 'submitted', googleClicked: existingReview.is_google_clicked });
                 }
             }
             setLoading(false);
@@ -130,6 +143,80 @@ const QueueMonitor = () => {
     const handleManualTrigger = () => {
         // Tell barber they arrived late
         updateQueueStatus('late_arrived');
+    };
+
+    const handleSubmitAppReview = async (e) => {
+        e.preventDefault();
+        if (reviewState.rating === 0) return;
+        setReviewState(prev => ({ ...prev, status: 'submitting' }));
+
+        try {
+            // 1. Insert Review
+            const { error: reviewError } = await supabase.from('reviews').insert([{
+                booking_id: booking.id,
+                phone_number: booking.phone_number,
+                customer_name: booking.customer_name,
+                rating: reviewState.rating,
+                comment: reviewState.comment,
+                is_google_clicked: false
+            }]);
+
+            if (reviewError) throw reviewError;
+
+            // 2. Award Points & Log Transaction
+            const pointsToAward = appSettings?.points_per_app_review || 10;
+
+            // Increment customer points via RPC or by basic fetch/update
+            // Since we rely on standard updates for now (No RPC assumed)
+            const { data: customerData } = await supabase.from('customers').select('points').eq('phone_number', booking.phone_number).single();
+            const currentPoints = customerData ? customerData.points : 0;
+
+            await supabase.from('customers').upsert({
+                phone_number: booking.phone_number,
+                name: booking.customer_name,
+                points: currentPoints + pointsToAward
+            });
+
+            await supabase.from('point_transactions').insert([{
+                phone_number: booking.phone_number,
+                amount: pointsToAward,
+                description: 'App Review Submitted'
+            }]);
+
+            setPointsEarned(prev => prev + pointsToAward);
+            setReviewState(prev => ({ ...prev, status: 'submitted' }));
+
+        } catch (error) {
+            console.error('Failed to submit review:', error);
+            setReviewState(prev => ({ ...prev, status: 'none' })); // Revert on failure
+        }
+    };
+
+    const handleGoogleClick = async () => {
+        if (reviewState.googleClicked || reviewState.status !== 'submitted') return; // Must submit app review first or only once
+
+        try {
+            // Update review record
+            await supabase.from('reviews').update({ is_google_clicked: true }).eq('booking_id', booking.id);
+
+            // Award Points
+            const pointsToAward = appSettings?.points_per_google_review || 10;
+            const { data: customerData } = await supabase.from('customers').select('points').eq('phone_number', booking.phone_number).single();
+            const currentPoints = customerData ? customerData.points : 0;
+
+            await supabase.from('customers').update({ points: currentPoints + pointsToAward }).eq('phone_number', booking.phone_number);
+
+            await supabase.from('point_transactions').insert([{
+                phone_number: booking.phone_number,
+                amount: pointsToAward,
+                description: 'Google Maps Review Link Clicked'
+            }]);
+
+            setPointsEarned(prev => prev + pointsToAward);
+            setReviewState(prev => ({ ...prev, googleClicked: true }));
+        } catch (e) {
+            console.error('Error awarding google points:', e);
+        }
     };
 
     if (loading) {
@@ -289,6 +376,92 @@ const QueueMonitor = () => {
                             <p className="text-[9px] text-center text-[#555] mt-3 uppercase">
                                 Action subject to barber availability
                             </p>
+                        </motion.div>
+                    )}
+
+                    {/* Review CTA for Completed Bookings */}
+                    {isCompleted && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="mt-10 pt-8 border-t border-[#d4af37]/10 text-center"
+                        >
+                            <h3 className="serif text-xl font-bold mb-2">Puas dengan Pelayanan Kami?</h3>
+
+                            {pointsEarned > 0 && (
+                                <div className="mb-4 inline-block bg-green-500/10 border border-green-500/30 text-green-400 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase">
+                                    +{pointsEarned} Points Earned
+                                </div>
+                            )}
+
+                            {reviewState.status === 'none' || reviewState.status === 'submitting' ? (
+                                <form onSubmit={handleSubmitAppReview} className="mt-6 text-left space-y-4">
+                                    <p className="text-xs text-[#a1a1a1] text-center mb-4 leading-relaxed">
+                                        Dapatkan <strong>{appSettings?.points_per_app_review || 10} Loyalty Points</strong> dengan memberikan ulasan tingkat kepuasan Anda di sini.
+                                    </p>
+
+                                    <div className="flex justify-center gap-2 mb-2">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => setReviewState(prev => ({ ...prev, rating: star }))}
+                                                className="focus:outline-none transition-transform hover:scale-110"
+                                            >
+                                                <Star size={32} className={`${reviewState.rating >= star ? 'fill-[#d4af37] text-[#d4af37]' : 'text-[#333]'}`} />
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <textarea
+                                        required
+                                        placeholder="Tuliskan pengalaman Anda..."
+                                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors min-h-[100px]"
+                                        value={reviewState.comment}
+                                        onChange={(e) => setReviewState(prev => ({ ...prev, comment: e.target.value }))}
+                                    />
+
+                                    <button
+                                        type="submit"
+                                        disabled={reviewState.rating === 0 || reviewState.status === 'submitting'}
+                                        className="gold-button w-full flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {reviewState.status === 'submitting' ? <Loader2 className="animate-spin" size={18} /> : 'Kirim Ulasan'}
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className="mt-6 space-y-6">
+                                    <div className="bg-[#141414] border border-[#333] rounded-lg p-6">
+                                        <p className="text-[#d4af37] font-bold text-sm uppercase tracking-widest flex items-center justify-center gap-2 mb-2">
+                                            <CheckCircle2 size={16} /> Ulasan Terkirim
+                                        </p>
+                                        <p className="text-xs text-[#a1a1a1]">Terima kasih atas masukannya!</p>
+                                    </div>
+
+                                    {!reviewState.googleClicked ? (
+                                        <div className="border border-[#d4af37]/30 bg-[#d4af37]/5 rounded-lg p-6">
+                                            <p className="text-sm font-bold mb-2">Bonus Points!</p>
+                                            <p className="text-xs text-[#a1a1a1] mb-4 leading-relaxed">
+                                                Dapatkan tambahan <strong>{appSettings?.points_per_google_review || 10} Points</strong> dengan menyalin ulasan Anda ke Google Maps kami.
+                                            </p>
+                                            <a
+                                                href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={handleGoogleClick}
+                                                className="gold-button w-full flex items-center justify-center gap-2"
+                                            >
+                                                <Star size={18} className="fill-black" /> Beri Ulasan di Google Maps
+                                            </a>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-2 text-[#555] text-xs uppercase tracking-widest font-bold">
+                                            <Star size={14} className="fill-[#555]" /> Bonus Points Claimed
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                         </motion.div>
                     )}
 

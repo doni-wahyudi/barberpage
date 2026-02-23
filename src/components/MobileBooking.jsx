@@ -12,7 +12,14 @@ const MobileBooking = () => {
     const [successId, setSuccessId] = useState(null);
     const [bookedSlots, setBookedSlots] = useState([]);
     const [products, setProducts] = useState([]);
+    const [services, setServices] = useState([]);
+    const [barbers, setBarbers] = useState([]);
     const [formError, setFormError] = useState('');
+
+    // Loyalty State
+    const [userPoints, setUserPoints] = useState(0);
+    const [appSettings, setAppSettings] = useState(null);
+    const [usePoints, setUsePoints] = useState(false);
 
     const [formData, setFormData] = useState({
         type: 'service', // 'service' or 'product' (for future)
@@ -76,14 +83,31 @@ const MobileBooking = () => {
             }
         };
 
-        const fetchProducts = async () => {
-            const { data, error } = await supabase.from('products').select('*');
-            if (data && !error) setProducts(data);
+        const fetchData = async () => {
+            const [productsRes, servicesRes, barbersRes] = await Promise.all([
+                supabase.from('products').select('*'),
+                supabase.from('services').select('*'),
+                supabase.from('barbers').select('*').eq('is_active', true)
+            ]);
+            if (productsRes.data) setProducts(productsRes.data);
+            if (servicesRes.data) setServices(servicesRes.data);
+            if (barbersRes.data) setBarbers(barbersRes.data);
+        };
+
+        const fetchLoyaltySettings = async () => {
+            const { data: settings } = await supabase.from('app_settings').select('*').eq('id', 1).single();
+            if (settings) setAppSettings(settings);
+
+            if (formData.phone) {
+                const { data: customer } = await supabase.from('customers').select('points').eq('phone_number', formData.phone).single();
+                if (customer) setUserPoints(customer.points);
+            }
         };
 
         fetchBookings();
-        fetchProducts();
-    }, [formData.date, formData.barber, formData.type]);
+        fetchData();
+        fetchLoyaltySettings();
+    }, [formData.date, formData.barber, formData.type, formData.phone]);
 
     // Consistent phone validation
     const validatePhone = (phone) => {
@@ -137,6 +161,55 @@ const MobileBooking = () => {
 
         setLoading(true);
 
+        // --- Calculate Total Price ---
+        let basePrice = 0;
+        let pointsToDeduct = 0;
+        let discountValue = 0;
+        let chosenServiceObj = null;
+        let redeemedItemName = '';
+
+        if (formData.type === 'service' && formData.service) {
+            chosenServiceObj = services.find(s => s.name === formData.service);
+            if (chosenServiceObj) basePrice = chosenServiceObj.price;
+        }
+
+        let addonPrice = 0;
+        const chosenProducts = [];
+        formData.addons.forEach(addonName => {
+            const product = products.find(p => p.name === addonName);
+            if (product) {
+                addonPrice += product.price;
+                chosenProducts.push(product);
+            }
+        });
+
+        // Find best item to redeem
+        if (usePoints && userPoints > 0) {
+            let bestRedeemableItem = null;
+            let highestPrice = -1;
+
+            if (formData.type === 'service' && chosenServiceObj?.is_redeemable && userPoints >= chosenServiceObj.points_required) {
+                bestRedeemableItem = chosenServiceObj;
+                highestPrice = chosenServiceObj.price;
+            }
+
+            chosenProducts.forEach(p => {
+                if (p.is_redeemable && userPoints >= p.points_required && p.price > highestPrice) {
+                    bestRedeemableItem = p;
+                    highestPrice = p.price;
+                }
+            });
+
+            if (bestRedeemableItem) {
+                discountValue = bestRedeemableItem.price;
+                pointsToDeduct = bestRedeemableItem.points_required;
+                redeemedItemName = bestRedeemableItem.name;
+            }
+        }
+
+        let grandTotal = (basePrice + addonPrice) - discountValue;
+        if (grandTotal < 0) grandTotal = 0;
+
         try {
             if (formData.type === 'service') {
                 // Double booking check
@@ -169,7 +242,8 @@ const MobileBooking = () => {
                         barber_name: formData.barber,
                         booking_date: formData.date,
                         booking_time: formData.time,
-                        status: 'pending'
+                        status: 'pending',
+                        total_price: grandTotal
                     }])
                     .select();
 
@@ -199,14 +273,24 @@ const MobileBooking = () => {
                         barber_name: 'Store Pickup',
                         booking_date: new Date().toISOString().split('T')[0],
                         booking_time: getNowTimeStr(),
-                        status: 'pending'
+                        status: 'pending',
+                        total_price: grandTotal
                     }])
                     .select();
 
                 if (error) throw error;
 
-                localStorage.setItem('auro_name', formData.name);
                 localStorage.setItem('auro_phone', formData.phone);
+
+                // Deduct points if used
+                if (usePoints && pointsToDeduct > 0) {
+                    await supabase.from('customers').update({ points: userPoints - pointsToDeduct }).eq('phone_number', formData.phone);
+                    await supabase.from('point_transactions').insert([{
+                        phone_number: formData.phone,
+                        amount: -pointsToDeduct,
+                        description: `Redeemed points for free item: ${redeemedItemName}`
+                    }]);
+                }
 
                 setSuccessId(newBooking[0].id);
             }
@@ -292,9 +376,7 @@ const MobileBooking = () => {
                     onChange={(e) => setFormData({ ...formData, barber: e.target.value, time: '' })}
                 >
                     <option value="" disabled>Select Barber</option>
-                    <option value="Master Aris">Master Aris</option>
-                    <option value="Senior Budi">Senior Budi</option>
-                    <option value="Artisan Catur">Artisan Catur</option>
+                    {barbers.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                 </select>
 
                 <select
@@ -303,10 +385,7 @@ const MobileBooking = () => {
                     onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                 >
                     <option value="" disabled>Select Service</option>
-                    <option value="Mid Fade">Mid Fade</option>
-                    <option value="Comma Hair">Comma Hair</option>
-                    <option value="Buzzcut">Buzzcut</option>
-                    <option value="Two Block">Two Block</option>
+                    {services.map(s => <option key={s.id} value={s.name}>{s.name} - Rp {s.price.toLocaleString('id-ID')}</option>)}
                 </select>
 
                 {formData.date === new Date().toISOString().split('T')[0] && (
@@ -445,73 +524,126 @@ const MobileBooking = () => {
         </motion.div>
     );
 
-    const renderStep4Contact = () => (
-        <motion.div
-            key="step4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="flex flex-col gap-5 w-full"
-        >
-            <h2 className="serif text-3xl font-bold mb-2 text-center">Your Info</h2>
-            {formError && <p className="text-red-500 text-xs text-center border border-red-500/30 p-2 rounded bg-red-500/10 mb-2">{formError}</p>}
+    const renderStep4Contact = () => {
+        // Calculate redeemable options right before rendering step 4
+        let bestRedeemableItem = null;
+        let highestPrice = -1;
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="relative">
-                    <User size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
-                    <input
-                        required
-                        type="text"
-                        placeholder="Full Name (e.g. John Doe)"
-                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                </div>
+        if (formData.type === 'service' && formData.service) {
+            const chosenServiceObj = services.find(s => s.name === formData.service);
+            if (chosenServiceObj?.is_redeemable && userPoints >= chosenServiceObj.points_required) {
+                bestRedeemableItem = chosenServiceObj;
+                highestPrice = chosenServiceObj.price;
+            }
+        }
 
-                <div className="relative">
-                    <Phone size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
-                    <input
-                        required
-                        type="tel"
-                        placeholder="Phone (08... or 628...)"
-                        title="Must start with 08 or 628"
-                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider"
-                        value={formData.phone}
-                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    />
-                </div>
+        formData.addons.forEach(addonName => {
+            const product = products.find(p => p.name === addonName);
+            if (product?.is_redeemable && userPoints >= product.points_required && product.price > highestPrice) {
+                bestRedeemableItem = product;
+                highestPrice = product.price;
+            }
+        });
 
-                <div className="p-4 bg-[#141414] rounded border border-[#d4af37]/10 mt-6 text-sm">
-                    {formData.type === 'service' ? (
-                        <>
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Date</span> <span>{formData.date}</span></p>
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Time</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Barber</span> <span>{formData.barber}</span></p>
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Service</span> <span>{formData.service}</span></p>
-                        </>
-                    ) : (
-                        <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Order</span> <span className="text-[#d4af37] font-bold">Store Pickup</span></p>
+        return (
+            <motion.div
+                key="step4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="flex flex-col gap-5 w-full"
+            >
+                <h2 className="serif text-3xl font-bold mb-2 text-center">Your Info</h2>
+                {formError && <p className="text-red-500 text-xs text-center border border-red-500/30 p-2 rounded bg-red-500/10 mb-2">{formError}</p>}
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="relative">
+                        <User size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
+                        <input
+                            required
+                            type="text"
+                            placeholder="Full Name (e.g. John Doe)"
+                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="relative">
+                        <Phone size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
+                        <input
+                            required
+                            type="tel"
+                            placeholder="Phone (08... or 628...)"
+                            title="Must start with 08 or 628"
+                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        />
+                    </div>
+
+                    <div className="p-4 bg-[#141414] rounded border border-[#d4af37]/10 mt-6 text-sm">
+                        {formData.type === 'service' ? (
+                            <>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Date</span> <span>{formData.date}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Time</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Barber</span> <span>{formData.barber}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Service</span> <span>{formData.service}</span></p>
+                            </>
+                        ) : (
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Order</span> <span className="text-[#d4af37] font-bold">Store Pickup</span></p>
+                        )}
+                        {(formData.addons || []).length > 0 && (
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Items' : 'Add-ons'}</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
+                        )}
+                    </div>
+
+                    {/* Loyalty Point Redemption Section */}
+                    {bestRedeemableItem && (
+                        <div className="bg-[#141414] border border-[#d4af37]/30 rounded-lg p-4 mt-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-[#d4af37] font-bold text-sm uppercase tracking-widest">Auro Rewards</span>
+                                <span className="text-xs bg-[#d4af37]/20 text-[#d4af37] px-2 py-0.5 rounded font-mono">
+                                    {userPoints} Pts Available
+                                </span>
+                            </div>
+                            <p className="text-xs text-[#a1a1a1] mb-3">
+                                You can get <strong className="text-[#d4af37]">{bestRedeemableItem.name}</strong> for free by redeeming {bestRedeemableItem.points_required} PTS!
+                            </p>
+
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={usePoints}
+                                        onChange={() => setUsePoints(!usePoints)}
+                                    />
+                                    <div className={`block w-10 h-6 rounded-full transition-colors ${usePoints ? 'bg-[#d4af37]' : 'bg-[#333]'}`}></div>
+                                    <div className={`absolute left-1 top-1 bg-black w-4 h-4 rounded-full transition-transform ${usePoints ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                                </div>
+                                <span className={`text-sm tracking-wide transition-colors ${usePoints ? 'text-[#d4af37] font-bold' : 'text-[#a1a1a1]'}`}>
+                                    Redeem points for this item
+                                </span>
+                            </label>
+                        </div>
                     )}
-                    {(formData.addons || []).length > 0 && (
-                        <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Items' : 'Add-ons'}</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
-                    )}
-                </div>
 
-                <div className="text-xs text-[#a1a1a1] text-center my-4">
-                    Your phone number acts as your ticket ID.
-                </div>
+                    <div className="text-xs text-[#a1a1a1] text-center my-4">
+                        Your phone number acts as your ticket ID.
+                    </div>
 
-                <button
-                    disabled={loading}
-                    type="submit"
-                    className="gold-button w-full flex items-center justify-center gap-2"
-                >
-                    {loading ? <Loader2 className="animate-spin" size={20} /> : 'Confirm Reservation'}
-                </button>
-            </form>
-        </motion.div>
-    );
+                    <button
+                        disabled={loading}
+                        type="submit"
+                        className="gold-button w-full flex items-center justify-center gap-2"
+                    >
+                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Confirm Reservation'}
+                    </button>
+                </form>
+            </motion.div>
+        );
+    };
 
     const renderSuccess = () => (
         <motion.div
@@ -549,7 +681,7 @@ const MobileBooking = () => {
                 )}
                 {successId && <div className="w-6" />}
                 <div className="flex-1 flex justify-center py-2">
-                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-16 md:h-20 object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}auro_logo_tagline.png`} alt="Auro Logo" className="h-24 md:h-32 object-contain" />
                 </div>
                 <div className="w-6"></div>
             </header>

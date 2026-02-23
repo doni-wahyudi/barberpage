@@ -45,7 +45,7 @@ const CheckOrder = () => {
                 .select('id, status, queue_status')
                 .ilike('customer_name', formData.name.trim()) // case-insensitive match
                 .eq('phone_number', formData.phone.trim())
-                .eq('booking_date', today)
+                .gte('booking_date', today) // Any upcoming booking
                 .neq('status', 'cancelled')
                 .order('created_at', { ascending: false })
                 .limit(1);
@@ -57,7 +57,7 @@ const CheckOrder = () => {
                 const bookingId = data[0].id;
                 navigate(`/queue/${bookingId}`);
             } else {
-                setError("We couldn't find an active booking for today with that name and phone number.");
+                setError("We couldn't find an active upcoming booking with that name and phone number.");
             }
         } catch (err) {
             console.error('Check order error:', err);
@@ -92,7 +92,7 @@ const CheckOrder = () => {
                         <Search className="mx-auto text-[#d4af37] mb-4" size={40} />
                         <h2 className="serif text-2xl font-bold mb-2">Find Your Queue</h2>
                         <p className="text-[#a1a1a1] text-sm">
-                            Enter the details you used to book your seat for today.
+                            Enter the details you used to book your seat.
                         </p>
                     </div>
 

@@ -13,6 +13,9 @@ import CheckOrder from './components/CheckOrder';
 import AdminLogin from './components/AdminLogin';
 import AdminInsights from './components/AdminInsights';
 import AdminProducts from './components/AdminProducts';
+import AdminSettings from './components/AdminSettings';
+import AdminServices from './components/AdminServices';
+import AdminBarbers from './components/AdminBarbers';
 import { Routes, Route } from 'react-router-dom';
 
 import AdminPanel from './components/AdminPanel';
@@ -100,6 +103,9 @@ function App() {
                         <Route path="/_studio_admin/login" element={<AdminLogin />} />
                         <Route path="/_studio_admin/insights" element={<AdminInsights />} />
                         <Route path="/_studio_admin/products" element={<AdminProducts />} />
+                        <Route path="/_studio_admin/services" element={<AdminServices />} />
+                        <Route path="/_studio_admin/capsters" element={<AdminBarbers />} />
+                        <Route path="/_studio_admin/settings" element={<AdminSettings />} />
                     </Routes>
 
                     <BookingModal

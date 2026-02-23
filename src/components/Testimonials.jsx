@@ -6,8 +6,8 @@ const testimonials = [
     {
         id: 1,
         name: "Arif Wijaya",
-        role: "Regular Client",
-        content: "The attention to detail at Auro Barbershop is unmatched. It's not just a haircut, it's a royal experience. Master Aris knows exactly what suits my face shape.",
+        role: "Pelanggan Setia",
+        content: "Perhatian terhadap detail di Auro Barbershop tidak ada duanya. Ini bukan hanya potong rambut, ini adalah pengalaman mewah. Barber Aris tahu persis gaya apa yang cocok dengan bentuk wajah saya.",
         stars: 5,
         avatar: "AW"
     },
@@ -15,15 +15,15 @@ const testimonials = [
         id: 2,
         name: "Daniel Santoso",
         role: "Business Executive",
-        content: "Found my permanent spot. The private studio vibe is exactly what I was looking for. No rush, just pure precision and great conversation.",
+        content: "Saya menemukan tempat cukur langganan saya di sini. Suasana studio pribadinya sangat nyaman. Tidak terburu-buru, presisi tingkat tinggi, dan pelayanannya sangat ramah.",
         stars: 5,
         avatar: "DS"
     },
     {
         id: 3,
         name: "Budi Pratama",
-        role: "Artist",
-        content: "The Two Block is world-class. They understand the art of grooming. The gold treatment definitely makes you feel like royalty.",
+        role: "Seniman",
+        content: "Potongan Two Block-nya kelas dunia. Mereka benar-benar memahami seni tata rambut pria. Perawatan eksklusifnya benar-benar membuat Anda merasa seperti sultan.",
         stars: 5,
         avatar: "BP"
     }
@@ -44,9 +44,9 @@ const Testimonials = () => {
                         whileInView={{ opacity: 1 }}
                         className="uppercase tracking-[0.3em] text-[#d4af37] text-xs"
                     >
-                        The Reviews
+                        Ulasan Kami
                     </motion.span>
-                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2 text-white">What Our Royals Say</h2>
+                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2 text-white">Kata Pelanggan Kami</h2>
                 </div>
 
                 <div className="relative glass-card p-12 md:p-16">
@@ -104,6 +104,19 @@ const Testimonials = () => {
                         >
                             <ChevronRight size={20} />
                         </button>
+                    </div>
+
+                    {/* Review CTA */}
+                    <div className="mt-12 text-center border-t border-[#d4af37]/10 pt-8">
+                        <p className="text-[#a1a1a1] text-sm mb-4">Pernah merasakan pengalaman di Auro Barbershop?</p>
+                        <a
+                            href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 gold-button !py-3 !px-8 text-sm"
+                        >
+                            <Star size={16} className="fill-black" /> Beri Ulasan di Google
+                        </a>
                     </div>
                 </div>
             </div>

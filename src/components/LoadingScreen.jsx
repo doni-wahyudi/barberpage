@@ -30,7 +30,7 @@ const LoadingScreen = () => {
                     marginBottom: '2rem'
                 }}
             >
-                <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" style={{ height: '6rem', objectFit: 'contain' }} />
+                <img src={`${import.meta.env.BASE_URL}auro_logo_tagline.png`} alt="Auro Logo" style={{ height: '10rem', objectFit: 'contain', maxWidth: '80vw' }} />
             </motion.div>
 
             <div style={{ width: '200px', height: '2px', background: '#1f1f1f', position: 'relative' }}>

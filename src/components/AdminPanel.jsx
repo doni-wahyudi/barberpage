@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { Trash2, Check, Scissors, X, Filter, Calendar, LogOut, Star, Users, Package } from 'lucide-react';
+import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog } from 'lucide-react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -95,16 +97,51 @@ const AdminPanel = () => {
         };
     }, [filterDate, navigate]);
 
-    const updateStatus = async (id, updates) => {
+    const updateStatus = async (booking, updates) => {
         const { error } = await supabase
             .from('bookings')
             .update(updates)
-            .eq('id', id);
+            .eq('id', booking.id);
 
-        if (error) alert('Error updating status');
-        // Will refetch via realtime instead of manual fetch if channel is active,
-        // but it's safer to fetch here just in case.
-        else fetchBookings();
+        if (error) {
+            alert('Error updating status');
+            return;
+        }
+
+        // --- Loyalty Points Logic on Completion ---
+        if (updates.status === 'completed' && booking.status !== 'completed' && booking.total_price > 0 && booking.phone_number) {
+            try {
+                // 1. Get Settings for exact point ratio
+                const { data: settings } = await supabase.from('app_settings').select('points_per_1000_spent').eq('id', 1).single();
+                const pointsRatio = settings ? settings.points_per_1000_spent : 1;
+
+                // 2. Calculate points earned
+                const pointsEarned = Math.floor(booking.total_price / 1000) * pointsRatio;
+
+                if (pointsEarned > 0) {
+                    // 3. Upsert Customer Points
+                    const { data: customerData } = await supabase.from('customers').select('points').eq('phone_number', booking.phone_number).single();
+                    const currentPoints = customerData ? customerData.points : 0;
+
+                    await supabase.from('customers').upsert({
+                        phone_number: booking.phone_number,
+                        name: booking.customer_name,
+                        points: currentPoints + pointsEarned
+                    });
+
+                    // 4. Record Transaction
+                    await supabase.from('point_transactions').insert([{
+                        phone_number: booking.phone_number,
+                        amount: pointsEarned,
+                        description: `Earned points from transaction(${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(booking.total_price)})`
+                    }]);
+                }
+            } catch (err) {
+                console.error("Failed to award points:", err);
+            }
+        }
+
+        fetchBookings();
     };
 
     const getStatusColor = (status) => {
@@ -143,6 +180,24 @@ const AdminPanel = () => {
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
                         <Package size={16} /> Manage Shop
+                    </button>
+                    <button
+                        onClick={() => navigate('/_studio_admin/services')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
+                    >
+                        <Scissors size={16} /> Services
+                    </button>
+                    <button
+                        onClick={() => navigate('/_studio_admin/capsters')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
+                    >
+                        <UserCog size={16} /> Capsters
+                    </button>
+                    <button
+                        onClick={() => navigate('/_studio_admin/settings')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
+                    >
+                        <Settings size={16} /> App Settings
                     </button>
                     <button
                         onClick={() => navigate('/_studio_admin/insights')}
@@ -241,10 +296,10 @@ const AdminPanel = () => {
                                                 </div>
                                             </td>
                                             <td className="p-6">
-                                                <div className={`text-[10px] uppercase font-bold tracking-widest ${getStatusColor(booking.status)}`}>
+                                                <div className={`text - [10px] uppercase font - bold tracking - widest ${getStatusColor(booking.status)} `}>
                                                     App: {booking.status}
                                                 </div>
-                                                <div className={`text-[10px] uppercase font-bold tracking-widest mt-1 ${getQueueStatusColor(booking.queue_status)}`}>
+                                                <div className={`text - [10px] uppercase font - bold tracking - widest mt - 1 ${getQueueStatusColor(booking.queue_status)} `}>
                                                     Queue: {booking.queue_status || 'waiting'}
                                                 </div>
                                             </td>
@@ -252,7 +307,7 @@ const AdminPanel = () => {
                                                 <div className="flex flex-wrap gap-2">
                                                     {(booking.queue_status === 'waiting' || booking.queue_status === 'late_arrived' || !booking.queue_status) && (
                                                         <button
-                                                            onClick={() => updateStatus(booking.id, { queue_status: 'in_progress' })}
+                                                            onClick={() => updateStatus(booking, { queue_status: 'in_progress' })}
                                                             className="px-2 py-1 text-[10px] font-bold border border-green-400/50 text-green-400 hover:bg-green-400/20 rounded transition-colors"
                                                             title="Start Service"
                                                         >
@@ -261,7 +316,7 @@ const AdminPanel = () => {
                                                     )}
                                                     {(booking.queue_status === 'late' || booking.queue_status === 'late_arrived') && (
                                                         <button
-                                                            onClick={() => updateStatus(booking.id, { queue_status: 'skipped', status: 'cancelled' })}
+                                                            onClick={() => updateStatus(booking, { queue_status: 'skipped', status: 'cancelled' })}
                                                             className="px-2 py-1 text-[10px] font-bold border border-red-500/50 text-red-500 hover:bg-red-500/20 rounded transition-colors"
                                                             title="Skip Late Customer"
                                                         >
@@ -269,21 +324,21 @@ const AdminPanel = () => {
                                                         </button>
                                                     )}
                                                     <button
-                                                        onClick={() => updateStatus(booking.id, { status: 'confirmed' })}
+                                                        onClick={() => updateStatus(booking, { status: 'confirmed' })}
                                                         className="p-1 glass-card hover:bg-blue-500/20 text-blue-400 transition-colors"
                                                         title="Confirm Booking"
                                                     >
                                                         <Check size={14} />
                                                     </button>
                                                     <button
-                                                        onClick={() => updateStatus(booking.id, { status: 'completed', queue_status: 'completed' })}
+                                                        onClick={() => updateStatus(booking, { status: 'completed', queue_status: 'completed' })}
                                                         className="p-1 glass-card hover:bg-[#d4af37]/20 text-[#d4af37] transition-colors"
                                                         title="Complete Masterpiece"
                                                     >
                                                         <Scissors size={14} />
                                                     </button>
                                                     <button
-                                                        onClick={() => updateStatus(booking.id, { status: 'cancelled', queue_status: 'skipped' })}
+                                                        onClick={() => updateStatus(booking, { status: 'cancelled', queue_status: 'skipped' })}
                                                         className="p-1 glass-card hover:bg-red-500/20 text-red-500 transition-colors"
                                                         title="Cancel Appointment"
                                                     >

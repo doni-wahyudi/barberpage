@@ -2,51 +2,51 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Package, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Scissors, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
 
-const AdminProducts = () => {
+const AdminServices = () => {
     const navigate = useNavigate();
-    const [products, setProducts] = useState([]);
+    const [services, setServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [authChecking, setAuthChecking] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState(null);
+    const [editingService, setEditingService] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
         price: '',
+        description: '',
         image_url: '',
         is_redeemable: false,
         points_required: '0'
     });
 
-    const fetchProducts = async () => {
+    const fetchServices = async () => {
         setLoading(true);
         try {
             const { data, error } = await supabase
-                .from('products')
+                .from('services')
                 .select('*')
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: true });
 
             if (error) throw error;
-            setProducts(data || []);
+            setServices(data || []);
         } catch (error) {
-            console.error('Error fetching products:', error);
+            console.error('Error fetching services:', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        // Enforce Authentication
         const checkAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) {
                 navigate('/_studio_admin/login');
             } else {
                 setAuthChecking(false);
-                fetchProducts();
+                fetchServices();
             }
         };
 
@@ -59,27 +59,28 @@ const AdminProducts = () => {
         return () => subscription.unsubscribe();
     }, [navigate]);
 
-    const handleOpenModal = (product = null) => {
-        if (product) {
-            setEditingProduct(product);
+    const handleOpenModal = (service = null) => {
+        if (service) {
+            setEditingService(service);
             setFormData({
-                name: product.name,
-                price: product.price.toString(),
-                image_url: product.image_url || '',
-                is_redeemable: product.is_redeemable || false,
-                points_required: (product.points_required || 0).toString()
+                name: service.name,
+                price: service.price.toString(),
+                description: service.description || '',
+                image_url: service.image_url || '',
+                is_redeemable: service.is_redeemable || false,
+                points_required: (service.points_required || 0).toString()
             });
         } else {
-            setEditingProduct(null);
-            setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0' });
+            setEditingService(null);
+            setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0' });
         }
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
         setIsModalOpen(false);
-        setEditingProduct(null);
-        setFormData({ name: '', price: '', image_url: '' });
+        setEditingService(null);
+        setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0' });
     };
 
     const handleSubmit = async (e) => {
@@ -88,49 +89,50 @@ const AdminProducts = () => {
 
         const payload = {
             name: formData.name,
-            price: parseFloat(formData.price),
+            price: parseInt(formData.price, 10),
+            description: formData.description || null,
             image_url: formData.image_url || null,
             is_redeemable: formData.is_redeemable,
             points_required: parseInt(formData.points_required, 10) || 0
         };
 
         try {
-            if (editingProduct) {
+            if (editingService) {
                 const { error } = await supabase
-                    .from('products')
+                    .from('services')
                     .update(payload)
-                    .eq('id', editingProduct.id);
+                    .eq('id', editingService.id);
                 if (error) throw error;
             } else {
                 const { error } = await supabase
-                    .from('products')
+                    .from('services')
                     .insert([payload]);
                 if (error) throw error;
             }
-            await fetchProducts();
+            await fetchServices();
             handleCloseModal();
         } catch (error) {
-            console.error('Error saving product:', error);
-            alert('Failed to save product.');
+            console.error('Error saving service:', error);
+            alert('Failed to save service.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this product?')) return;
+        if (!window.confirm('Are you sure you want to delete this service?')) return;
 
         try {
             const { error } = await supabase
-                .from('products')
+                .from('services')
                 .delete()
                 .eq('id', id);
 
             if (error) throw error;
-            setProducts(products.filter(p => p.id !== id));
+            setServices(services.filter(s => s.id !== id));
         } catch (error) {
-            console.error('Error deleting product:', error);
-            alert('Failed to delete product.');
+            console.error('Error deleting service:', error);
+            alert('Failed to delete service.');
         }
     };
 
@@ -165,15 +167,15 @@ const AdminProducts = () => {
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
                     <div>
-                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Inventory</span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Manage Products</h2>
+                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Haircuts & Add-ons</span>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Manage Services</h2>
                     </div>
 
                     <button
                         onClick={() => handleOpenModal()}
                         className="flex items-center gap-2 px-6 py-3 bg-[#d4af37] hover:bg-[#b5952f] transition-all rounded text-sm font-bold text-black"
                     >
-                        <Plus size={18} /> Add Product
+                        <Plus size={18} /> Add Service
                     </button>
                 </div>
 
@@ -181,30 +183,30 @@ const AdminProducts = () => {
                     <div className="flex justify-center p-12">
                         <Loader2 className="animate-spin text-[#d4af37]" size={32} />
                     </div>
-                ) : products.length === 0 ? (
+                ) : services.length === 0 ? (
                     <div className="glass-card p-12 text-center text-[#a1a1a1] flex flex-col items-center gap-4">
-                        <Package size={48} className="opacity-20" />
-                        <p>No products available yet.<br />Click "Add Product" to create your first one.</p>
+                        <Scissors size={48} className="opacity-20" />
+                        <p>No services available yet.<br />Click "Add Service" to create your first one.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <AnimatePresence>
-                            {products.map((product) => (
+                            {services.map((service) => (
                                 <motion.div
-                                    key={product.id}
+                                    key={service.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     className="glass-card overflow-hidden flex flex-col relative"
                                 >
-                                    {product.is_redeemable && (
+                                    {service.is_redeemable && (
                                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-3 py-1 uppercase tracking-widest z-10">
-                                            {product.points_required} PTS Reward
+                                            {service.points_required} PTS Reward
                                         </div>
                                     )}
                                     <div className="h-48 w-full bg-[#141414] relative flex-shrink-0 border-b border-[#333]">
-                                        {product.image_url ? (
-                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                        {service.image_url ? (
+                                            <img src={service.image_url} alt={service.name} className="w-full h-full object-cover" />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-[#333]">
                                                 <ImageIcon size={48} />
@@ -212,18 +214,19 @@ const AdminProducts = () => {
                                         )}
                                     </div>
                                     <div className="p-5 flex-1 flex flex-col">
-                                        <h3 className="font-bold text-lg mb-1 line-clamp-2">{product.name}</h3>
-                                        <p className="text-[#d4af37] font-mono font-bold mb-4">{formatPrice(product.price)}</p>
+                                        <h3 className="font-bold text-lg mb-1">{service.name}</h3>
+                                        <p className="text-[#d4af37] font-mono font-bold">{formatPrice(service.price)}</p>
+                                        <p className="text-sm text-[#a1a1a1] mt-3 line-clamp-3 leading-relaxed">{service.description}</p>
 
-                                        <div className="mt-auto flex gap-2 pt-4 border-t border-[#333]">
+                                        <div className="mt-6 flex gap-2 pt-4 border-t border-[#333]">
                                             <button
-                                                onClick={() => handleOpenModal(product)}
+                                                onClick={() => handleOpenModal(service)}
                                                 className="flex-1 py-2 text-xs uppercase tracking-widest font-bold bg-[#1a1a1a] hover:bg-[#d4af37]/20 text-[#a1a1a1] hover:text-[#d4af37] transition-colors rounded flex justify-center items-center gap-2"
                                             >
                                                 <Edit2 size={14} /> Edit
                                             </button>
                                             <button
-                                                onClick={() => handleDelete(product.id)}
+                                                onClick={() => handleDelete(service.id)}
                                                 className="py-2 px-4 text-xs bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors rounded flex justify-center items-center"
                                             >
                                                 <Trash2 size={14} />
@@ -244,7 +247,7 @@ const AdminProducts = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
                         onClick={handleCloseModal}
                     >
                         <motion.div
@@ -252,19 +255,19 @@ const AdminProducts = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-[#121212] border border-[#d4af37]/20 w-full max-w-md rounded-xl p-6 shadow-2xl relative"
+                            className="bg-[#121212] border border-[#d4af37]/20 w-full max-w-md rounded-xl p-6 shadow-2xl relative my-8"
                         >
                             <h3 className="serif text-2xl font-bold mb-6 text-white text-center">
-                                {editingProduct ? 'Edit Product' : 'Add New Product'}
+                                {editingService ? 'Edit Service' : 'Add New Service'}
                             </h3>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Product Name <span className="text-red-500">*</span></label>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Service Name <span className="text-red-500">*</span></label>
                                     <input
                                         required
                                         type="text"
-                                        placeholder="e.g. Matte Clay Pomade"
+                                        placeholder="e.g. Mid Fade"
                                         className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -277,11 +280,22 @@ const AdminProducts = () => {
                                         required
                                         type="number"
                                         min="0"
-                                        placeholder="e.g. 85000"
+                                        placeholder="e.g. 25000"
                                         className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider text-white"
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Description</label>
+                                    <textarea
+                                        rows="3"
+                                        placeholder="Service details..."
+                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white text-sm"
+                                        value={formData.description}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    ></textarea>
                                 </div>
 
                                 <div>
@@ -293,7 +307,6 @@ const AdminProducts = () => {
                                         value={formData.image_url}
                                         onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
                                     />
-                                    <p className="text-[10px] text-[#555] mt-1">Leave blank to use a default placeholder icon.</p>
                                 </div>
 
                                 <div className="border-t border-[#333] pt-4 mt-2">
@@ -356,4 +369,4 @@ const AdminProducts = () => {
     );
 };
 
-export default AdminProducts;
+export default AdminServices;
