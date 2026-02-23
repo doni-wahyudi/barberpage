@@ -20,7 +20,8 @@ const MobileBooking = () => {
         service: '',
         barber: '',
         date: new Date().toISOString().split('T')[0],
-        time: ''
+        time: '',
+        addons: []
     });
 
     const timeSlots = [
@@ -139,12 +140,16 @@ const MobileBooking = () => {
                     return;
                 }
 
+                const finalService = formData.addons?.length > 0
+                    ? `${formData.service} (+ ${formData.addons.join(' & ')})`
+                    : formData.service;
+
                 const { data: newBooking, error } = await supabase
                     .from('bookings')
                     .insert([{
                         customer_name: formData.name,
                         phone_number: formData.phone,
-                        service_type: formData.service,
+                        service_type: finalService,
                         barber_name: formData.barber,
                         booking_date: formData.date,
                         booking_time: formData.time,
@@ -326,9 +331,66 @@ const MobileBooking = () => {
         </motion.div>
     );
 
-    const renderStep3Contact = () => (
+    const toggleAddon = (item) => {
+        setFormData(prev => {
+            const current = prev.addons || [];
+            if (current.includes(item)) {
+                return { ...prev, addons: current.filter(a => a !== item) };
+            } else {
+                return { ...prev, addons: [...current, item] };
+            }
+        });
+    };
+
+    const renderStep3Addons = () => (
         <motion.div
             key="step3"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="flex flex-col gap-5 w-full"
+        >
+            <h2 className="serif text-3xl font-bold mb-2 text-center">Enhance Your Visit</h2>
+            <p className="text-[#a1a1a1] text-center text-sm mb-4">Would you like to add any products or drinks to your reservation?</p>
+
+            <div className="space-y-4">
+                {[
+                    { id: 'Premium Pomade', icon: <Scissors size={20} />, sub: 'Auro Signature Hold' },
+                    { id: 'Signature Coffee', icon: <Coffee size={20} />, sub: 'Freshly Brewed Iced Coffee' }
+                ].map((addon) => {
+                    const isSelected = (formData.addons || []).includes(addon.id);
+                    return (
+                        <button
+                            key={addon.id}
+                            onClick={() => toggleAddon(addon.id)}
+                            className={`w-full p-4 rounded border transition-all flex items-center justify-between group
+                                ${isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-[#141414] border-[#d4af37]/20 text-[#a1a1a1] hover:border-[#d4af37]/50'}
+                            `}
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${isSelected ? 'bg-[#d4af37] text-black' : 'bg-[#1a1a1a] text-[#555] group-hover:text-[#d4af37]'}`}>
+                                    {addon.icon}
+                                </div>
+                                <div className="text-left flex-1 pl-2">
+                                    <h3 className="font-bold text-sm uppercase tracking-widest">{addon.id}</h3>
+                                    <p className="text-[10px] uppercase tracking-wider">{addon.sub}</p>
+                                </div>
+                            </div>
+                            {isSelected && <div className="w-3 h-3 rounded-full bg-[#d4af37] flex-shrink-0"></div>}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <button onClick={handleNext} className="gold-button w-full mt-6">
+                {(formData.addons || []).length > 0 ? 'Add & Continue' : 'Skip & Continue'}
+            </button>
+        </motion.div>
+    );
+
+    const renderStep4Contact = () => (
+        <motion.div
+            key="step4"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -368,6 +430,9 @@ const MobileBooking = () => {
                     <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Time</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
                     <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Barber</span> <span>{formData.barber}</span></p>
                     <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Service</span> <span>{formData.service}</span></p>
+                    {(formData.addons || []).length > 0 && (
+                        <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Add-ons</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
+                    )}
                 </div>
 
                 <div className="text-xs text-[#a1a1a1] text-center my-4">
@@ -403,22 +468,7 @@ const MobileBooking = () => {
                 Open Queue Monitor Now
             </button>
 
-            {/* Coffee & Product Offer */}
-            <div className="mt-6 pt-6 border-t border-[#d4af37]/10 w-full text-center">
-                <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-4">While you wait</p>
-                <button
-                    onClick={() => { alert("Product & Coffee purchases are coming in a future update!"); }}
-                    className="glass-card p-4 flex items-center justify-center gap-4 hover:border-[#d4af37]/50 transition-all opacity-50 cursor-not-allowed group w-full"
-                >
-                    <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center min-w-[40px]">
-                        <Coffee size={20} className="text-[#555]" />
-                    </div>
-                    <div className="text-left flex-1">
-                        <h3 className="font-bold text-sm uppercase tracking-widest text-[#555]">Products & Coffee</h3>
-                        <p className="text-[10px] text-[#a1a1a1] uppercase tracking-wider">Coming Soon</p>
-                    </div>
-                </button>
-            </div>
+
 
             <p className="text-[10px] uppercase tracking-widest text-[#555] mt-6">
                 Save this link or use the "Check Order" tool later.
@@ -435,8 +485,8 @@ const MobileBooking = () => {
                     </button>
                 )}
                 {successId && <div className="w-6" />}
-                <div className="flex-1 flex justify-center">
-                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-10 object-contain" />
+                <div className="flex-1 flex justify-center py-2">
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-16 md:h-20 object-contain" />
                 </div>
                 <div className="w-6"></div>
             </header>
@@ -446,7 +496,8 @@ const MobileBooking = () => {
                     {successId ? renderSuccess() : (
                         step === 1 ? renderStep1TypeSelection() :
                             step === 2 ? renderStep2Details() :
-                                renderStep3Contact()
+                                step === 3 ? renderStep3Addons() :
+                                    renderStep4Contact()
                     )}
                 </AnimatePresence>
             </main>
