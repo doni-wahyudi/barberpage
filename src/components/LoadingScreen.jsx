@@ -30,7 +30,7 @@ const LoadingScreen = () => {
                     marginBottom: '2rem'
                 }}
             >
-                DCUKUR
+                AURO
             </motion.div>
 
             <div style={{ width: '200px', height: '2px', background: '#1f1f1f', position: 'relative' }}>

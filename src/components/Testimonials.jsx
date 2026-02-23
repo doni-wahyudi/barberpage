@@ -7,7 +7,7 @@ const testimonials = [
         id: 1,
         name: "Arif Wijaya",
         role: "Regular Client",
-        content: "The attention to detail at DCUKUR is unmatched. It's not just a haircut, it's a royal experience. Master Aris knows exactly what suits my face shape.",
+        content: "The attention to detail at Auro Barbershop is unmatched. It's not just a haircut, it's a royal experience. Master Aris knows exactly what suits my face shape.",
         stars: 5,
         avatar: "AW"
     },

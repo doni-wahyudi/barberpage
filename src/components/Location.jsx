@@ -69,7 +69,7 @@ const Location = () => {
                                 <div>
                                     <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Contact</h4>
                                     <p className="text-[#a1a1a1] text-sm">+62 812 3456 7890</p>
-                                    <p className="text-[#a1a1a1] text-sm font-mono">hello@dcukur.com</p>
+                                    <p className="text-[#a1a1a1] text-sm font-mono">hello@aurobarbershop.com</p>
                                 </div>
                             </div>
                         </div>

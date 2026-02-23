@@ -47,7 +47,7 @@ const Lookbook = () => {
                             className="relative aspect-square overflow-hidden group border border-[#d4af37]/5"
                         >
                             <div className="absolute inset-0 bg-[#141414] flex items-center justify-center text-[#d4af37]/20 text-xs uppercase tracking-widest font-bold">
-                                DCUKUR PORTFOLIO
+                                AURO PORTFOLIO
                             </div>
 
                             <img

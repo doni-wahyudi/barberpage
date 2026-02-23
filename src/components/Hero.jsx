@@ -53,7 +53,7 @@ const Hero = ({ onBooking }) => {
                 className="absolute inset-0 z-[2] flex items-center justify-center opacity-10 pointer-events-none"
             >
                 <h1 className="serif text-[40vw] font-bold text-white select-none whitespace-nowrap">
-                    DCUKUR
+                    AURO
                 </h1>
             </motion.div>
 

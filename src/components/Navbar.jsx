@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Scissors } from 'lucide-react';
+import { Menu, X, Scissors, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [scrolled, setScrolled] = useState(false);
@@ -35,7 +36,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                     onClick={() => isAdminView && onAdminToggle()}
                 >
                     <Scissors className="text-[#d4af37]" size={24} />
-                    <span className="serif text-xl font-bold tracking-widest text-[#d4af37]">DCUKUR</span>
+                    <span className="serif text-xl font-bold tracking-widest text-[#d4af37]">AURO</span>
                 </motion.div>
 
                 {/* Desktop Menu */}
@@ -63,6 +64,12 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                                     {link.name}
                                 </motion.a>
                             ))}
+                            <Link
+                                to="/check"
+                                className="text-xs uppercase tracking-widest text-[#a1a1a1] hover:text-[#d4af37] transition-colors flex items-center gap-2"
+                            >
+                                <Search size={14} /> Check Order
+                            </Link>
                             <motion.button
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -115,7 +122,12 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                                         {link.name}
                                     </a>
                                 ))}
-                                <button onClick={() => { onBooking(); setMobileMenuOpen(false); }} className="gold-button w-full">Book Now</button>
+                                <div className="flex flex-col gap-4 w-full mt-2">
+                                    <Link to="/check" onClick={() => setMobileMenuOpen(false)} className="py-3 px-6 bg-transparent border border-[#333] hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded text-center text-white flex justify-center items-center gap-2">
+                                        <Search size={16} /> Check Order
+                                    </Link>
+                                    <button onClick={() => { onBooking(); setMobileMenuOpen(false); }} className="gold-button w-full">Book Now</button>
+                                </div>
                             </>
                         )}
                     </motion.div>

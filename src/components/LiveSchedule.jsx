@@ -5,10 +5,11 @@ import { supabase } from '../lib/supabaseClient';
 
 const BARBERS = ['Master Aris', 'Senior Budi', 'Artisan Catur'];
 const TIME_SLOTS = [
-    "09:00", "10:00", "11:00", "12:00", "13:00",
-    "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+    "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+    "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
 ];
-const TOTAL_CAPACITY = BARBERS.length * TIME_SLOTS.length;
+const TOTAL_CAPACITY = Math.floor(BARBERS.length * (TIME_SLOTS.length / 2));
 
 const formatDateLabel = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -75,10 +76,29 @@ const LiveSchedule = ({ onSelectSlot }) => {
 
     const traffic = getTrafficLabel();
 
-    const getSlotForBarber = (barber, time) => {
-        return bookings.find(
-            b => b.barber_name === barber && b.booking_time?.substring(0, 5) === time
-        );
+    const parseTime = (t) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const getSlotState = (barber, slot) => {
+        const slotMins = parseTime(slot);
+
+        const activeBooking = bookings.find(b => {
+            if (b.barber_name !== barber) return false;
+            const bMins = parseTime(b.booking_time.substring(0, 5));
+            return bMins <= slotMins && slotMins < bMins + 60;
+        });
+
+        if (activeBooking) return { booking: activeBooking, isBlocked: true };
+
+        const isOverlap = bookings.some(b => {
+            if (b.barber_name !== barber) return false;
+            const bMins = parseTime(b.booking_time.substring(0, 5));
+            return Math.abs(bMins - slotMins) < 60;
+        });
+
+        return { booking: null, isBlocked: isOverlap };
     };
 
     const now = new Date();
@@ -204,7 +224,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                     <div className="flex-1 overflow-x-auto">
                                         <div className="flex gap-1.5 min-w-max">
                                             {TIME_SLOTS.map(slot => {
-                                                const booking = getSlotForBarber(barber, slot);
+                                                const { booking, isBlocked } = getSlotState(barber, slot);
                                                 const isPast = isToday && slot < currentHour;
                                                 const isCurrent = isToday && slot === currentHour;
 
@@ -212,19 +232,21 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                                     <div
                                                         key={slot}
                                                         onClick={() => {
-                                                            if (!booking && !isPast && onSelectSlot) {
+                                                            if (!isBlocked && !isPast && onSelectSlot) {
                                                                 onSelectSlot({ barber, time: slot, date: selectedDate });
                                                             }
                                                         }}
                                                         className={`
                                                             relative group flex flex-col items-center justify-center 
-                                                            w-16 h-14 rounded text-center transition-all duration-300
+                                                            w-16 h-14 rounded text-center transition-all duration-300 shrink-0
                                                             ${isCurrent ? 'ring-1 ring-[#d4af37]/50' : ''}
                                                             ${booking
                                                                 ? 'bg-[#d4af37]/15 border border-[#d4af37]/30'
                                                                 : isPast
                                                                     ? 'bg-[#1a1a1a] border border-[#1f1f1f] opacity-40'
-                                                                    : 'bg-[#1a1a1a] border border-[#1f1f1f] cursor-pointer hover:border-[#d4af37]/50 hover:bg-[#d4af37]/5'
+                                                                    : isBlocked
+                                                                        ? 'bg-[#1a1a1a] border border-[#1f1f1f] opacity-50 cursor-not-allowed'
+                                                                        : 'bg-[#1a1a1a] border border-[#1f1f1f] cursor-pointer hover:border-[#d4af37]/50 hover:bg-[#d4af37]/5'
                                                             }
                                                         `}
                                                     >
@@ -234,8 +256,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                                                 {booking.service_type.split(' ')[0]}
                                                             </span>
                                                         ) : (
-                                                            <span className={`text-[8px] mt-0.5 ${isPast ? 'text-[#333]' : 'text-[#555]'}`}>
-                                                                {isPast ? '—' : 'Open'}
+                                                            <span className={`text-[8px] mt-0.5 ${isPast || isBlocked ? 'text-[#333]' : 'text-[#555]'}`}>
+                                                                {isPast ? '—' : isBlocked ? 'Wait' : 'Open'}
                                                             </span>
                                                         )}
                                                     </div>
