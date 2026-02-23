@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { Trash2, Check, Scissors, X, Filter, Calendar, LogOut, Star, Users } from 'lucide-react';
+import { Trash2, Check, Scissors, X, Filter, Calendar, LogOut, Star, Users, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const AdminPanel = () => {
@@ -138,6 +138,12 @@ const AdminPanel = () => {
         <div className="min-h-screen bg-[#0a0a0a] text-white pt-12 pb-24 px-6 relative">
             <header className="max-w-7xl mx-auto flex justify-end mb-8">
                 <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/_studio_admin/products')}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
+                    >
+                        <Package size={16} /> Manage Shop
+                    </button>
                     <button
                         onClick={() => navigate('/_studio_admin/insights')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
@@ -293,7 +299,7 @@ const AdminPanel = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

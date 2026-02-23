@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee, Loader2, Search } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee, Loader2, Search, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const MobileBooking = () => {
@@ -11,6 +11,7 @@ const MobileBooking = () => {
     const [loading, setLoading] = useState(false);
     const [successId, setSuccessId] = useState(null);
     const [bookedSlots, setBookedSlots] = useState([]);
+    const [products, setProducts] = useState([]);
     const [formError, setFormError] = useState('');
 
     const [formData, setFormData] = useState({
@@ -74,7 +75,14 @@ const MobileBooking = () => {
                 setBookedSlots(data.map(b => b.booking_time.substring(0, 5)));
             }
         };
+
+        const fetchProducts = async () => {
+            const { data, error } = await supabase.from('products').select('*');
+            if (data && !error) setProducts(data);
+        };
+
         fetchBookings();
+        fetchProducts();
     }, [formData.date, formData.barber, formData.type]);
 
     // Consistent phone validation
@@ -91,6 +99,10 @@ const MobileBooking = () => {
 
     const handleNext = () => {
         setFormError('');
+        if (step === 1 && formData.type === 'product') {
+            setStep(3); // Skip Date/Time/Barber if only buying products
+            return;
+        }
         if (step === 2) {
             if (formData.type === 'service' && (!formData.service || !formData.barber || !formData.date || !formData.time)) {
                 setFormError('Please select all required options to proceed.');
@@ -101,6 +113,10 @@ const MobileBooking = () => {
     };
 
     const handleBack = () => {
+        if (step === 3 && formData.type === 'product') {
+            setStep(1);
+            return;
+        }
         if (step > 1) setStep(prev => prev - 1);
         else navigate('/');
     };
@@ -165,9 +181,34 @@ const MobileBooking = () => {
 
                 setSuccessId(newBooking[0].id);
             } else {
-                // Future handling for 'product' purchases
-                alert('Product purchases coming soon!');
-                setLoading(false);
+                // Product-only purchase
+                if (formData.addons.length === 0) {
+                    setFormError('Please select at least one item from the shop.');
+                    setLoading(false);
+                    return;
+                }
+
+                const finalOrder = `Shop Purchase: ${formData.addons.join(', ')}`;
+
+                const { data: newBooking, error } = await supabase
+                    .from('bookings')
+                    .insert([{
+                        customer_name: formData.name,
+                        phone_number: formData.phone,
+                        service_type: finalOrder,
+                        barber_name: 'Store Pickup',
+                        booking_date: new Date().toISOString().split('T')[0],
+                        booking_time: getNowTimeStr(),
+                        status: 'pending'
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                localStorage.setItem('auro_name', formData.name);
+                localStorage.setItem('auro_phone', formData.phone);
+
+                setSuccessId(newBooking[0].id);
             }
         } catch (error) {
             console.error('Error booking:', error.message);
@@ -201,14 +242,14 @@ const MobileBooking = () => {
             </button>
 
             <button
-                onClick={() => { alert("Product purchases are coming in a future update!"); }}
-                className="glass-card p-6 flex flex-col items-center justify-center gap-4 hover:border-[#d4af37]/50 transition-all opacity-50 cursor-not-allowed group w-full"
+                onClick={() => { setFormData({ ...formData, type: 'product' }); setStep(3); }}
+                className="glass-card p-6 flex flex-col items-center justify-center gap-4 hover:border-[#d4af37]/50 transition-all group w-full"
             >
-                <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-                    <Coffee size={28} className="text-[#555]" />
+                <div className="w-16 h-16 rounded-full bg-[#d4af37]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Coffee size={28} className="text-[#d4af37]" />
                 </div>
-                <h3 className="font-bold text-lg uppercase tracking-widest text-[#555]">Products & Coffee</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Pomade, Coffee, etc. (Coming Soon)</p>
+                <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Shop</h3>
+                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Shop our premium collection</p>
             </button>
 
             <Link
@@ -350,30 +391,43 @@ const MobileBooking = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col gap-5 w-full"
         >
-            <h2 className="serif text-3xl font-bold mb-2 text-center">Enhance Your Visit</h2>
-            <p className="text-[#a1a1a1] text-center text-sm mb-4">Would you like to add any products or drinks to your reservation?</p>
+            <h2 className="serif text-3xl font-bold mb-2 text-center">
+                {formData.type === 'service' ? 'Enhance Your Visit' : 'Auro Shop'}
+            </h2>
+            <p className="text-[#a1a1a1] text-center text-sm mb-4">
+                {formData.type === 'service'
+                    ? 'Would you like to add any products or drinks to your reservation?'
+                    : 'Select premium items to purchase and pick up in-store.'}
+            </p>
 
             <div className="space-y-4">
-                {[
-                    { id: 'Premium Pomade', icon: <Scissors size={20} />, sub: 'Auro Signature Hold' },
-                    { id: 'Signature Coffee', icon: <Coffee size={20} />, sub: 'Freshly Brewed Iced Coffee' }
-                ].map((addon) => {
-                    const isSelected = (formData.addons || []).includes(addon.id);
+                {products.length === 0 ? (
+                    <p className="text-center text-[#555] text-xs uppercase tracking-widest py-4 border border-[#333] rounded border-dashed">No shop items available yet.</p>
+                ) : products.map((product) => {
+                    const isSelected = (formData.addons || []).includes(product.name);
+                    const formattedPrice = new Intl.NumberFormat('id-ID', {
+                        style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+                    }).format(product.price);
+
                     return (
                         <button
-                            key={addon.id}
-                            onClick={() => toggleAddon(addon.id)}
+                            key={product.id}
+                            onClick={() => toggleAddon(product.name)}
                             className={`w-full p-4 rounded border transition-all flex items-center justify-between group
                                 ${isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-[#141414] border-[#d4af37]/20 text-[#a1a1a1] hover:border-[#d4af37]/50'}
                             `}
                         >
                             <div className="flex items-center gap-4">
-                                <div className={`w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center ${isSelected ? 'bg-[#d4af37] text-black' : 'bg-[#1a1a1a] text-[#555] group-hover:text-[#d4af37]'}`}>
-                                    {addon.icon}
+                                <div className={`w-12 h-12 flex-shrink-0 rounded flex items-center justify-center overflow-hidden ${isSelected ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#1a1a1a] text-[#555] border-[#333] border'}`}>
+                                    {product.image_url ? (
+                                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Package size={20} />
+                                    )}
                                 </div>
                                 <div className="text-left flex-1 pl-2">
-                                    <h3 className="font-bold text-sm uppercase tracking-widest">{addon.id}</h3>
-                                    <p className="text-[10px] uppercase tracking-wider">{addon.sub}</p>
+                                    <h3 className="font-bold text-sm uppercase tracking-widest">{product.name}</h3>
+                                    <p className="text-[10px] text-[#d4af37] font-mono tracking-wider">{formattedPrice}</p>
                                 </div>
                             </div>
                             {isSelected && <div className="w-3 h-3 rounded-full bg-[#d4af37] flex-shrink-0"></div>}
@@ -383,7 +437,10 @@ const MobileBooking = () => {
             </div>
 
             <button onClick={handleNext} className="gold-button w-full mt-6">
-                {(formData.addons || []).length > 0 ? 'Add & Continue' : 'Skip & Continue'}
+                {formData.type === 'product'
+                    ? ((formData.addons || []).length > 0 ? 'Checkout' : 'Select an item to continue')
+                    : ((formData.addons || []).length > 0 ? 'Add & Continue' : 'Skip & Continue')
+                }
             </button>
         </motion.div>
     );
@@ -426,12 +483,18 @@ const MobileBooking = () => {
                 </div>
 
                 <div className="p-4 bg-[#141414] rounded border border-[#d4af37]/10 mt-6 text-sm">
-                    <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Date</span> <span>{formData.date}</span></p>
-                    <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Time</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
-                    <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Barber</span> <span>{formData.barber}</span></p>
-                    <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Service</span> <span>{formData.service}</span></p>
+                    {formData.type === 'service' ? (
+                        <>
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Date</span> <span>{formData.date}</span></p>
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Time</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Barber</span> <span>{formData.barber}</span></p>
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Service</span> <span>{formData.service}</span></p>
+                        </>
+                    ) : (
+                        <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Order</span> <span className="text-[#d4af37] font-bold">Store Pickup</span></p>
+                    )}
                     {(formData.addons || []).length > 0 && (
-                        <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Add-ons</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
+                        <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Items' : 'Add-ons'}</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
                     )}
                 </div>
 

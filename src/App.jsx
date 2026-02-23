@@ -12,6 +12,7 @@ import MobileBooking from './components/MobileBooking';
 import CheckOrder from './components/CheckOrder';
 import AdminLogin from './components/AdminLogin';
 import AdminInsights from './components/AdminInsights';
+import AdminProducts from './components/AdminProducts';
 import { Routes, Route } from 'react-router-dom';
 
 import AdminPanel from './components/AdminPanel';
@@ -98,6 +99,7 @@ function App() {
                         <Route path="/_studio_admin" element={<AdminPanel />} />
                         <Route path="/_studio_admin/login" element={<AdminLogin />} />
                         <Route path="/_studio_admin/insights" element={<AdminInsights />} />
+                        <Route path="/_studio_admin/products" element={<AdminProducts />} />
                     </Routes>
 
                     <BookingModal
