@@ -30,12 +30,12 @@ const Location = () => {
                                 <div>
                                     <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Location</h4>
                                     <p className="text-[#a1a1a1] text-sm leading-relaxed">
-                                        Royal Plaza Block B1-14<br />
-                                        Central Business District, Jakarta<br />
-                                        12345, Indonesia
+                                        Jl. Pinus 1, Pamulang Bar.<br />
+                                        Kota Tangerang Selatan<br />
+                                        Banten 15417
                                     </p>
                                     <a
-                                        href="https://maps.google.com"
+                                        href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 text-[#d4af37] text-xs mt-3 uppercase tracking-widest font-bold hover:underline"
@@ -68,8 +68,9 @@ const Location = () => {
                                 </div>
                                 <div>
                                     <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Contact</h4>
-                                    <p className="text-[#a1a1a1] text-sm">+62 812 3456 7890</p>
-                                    <p className="text-[#a1a1a1] text-sm font-mono">hello@aurobarbershop.com</p>
+                                    <p className="text-[#a1a1a1] text-sm">+62 852 1946 1408</p>
+                                    <p className="text-[#a1a1a1] text-sm font-mono mt-1">IG: aurobarbershop.id</p>
+                                    <p className="text-[#a1a1a1] text-sm font-mono">TikTok: aurobarbershop.id</p>
                                 </div>
                             </div>
                         </div>
@@ -93,7 +94,7 @@ const Location = () => {
                             {/* Overlay with CTA */}
                             <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-500 z-10 flex items-center justify-center">
                                 <a
-                                    href="https://maps.google.com"
+                                    href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="gold-button !text-xs"

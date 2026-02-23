@@ -81,9 +81,9 @@ function App() {
                                     {/* Simple Footer */}
                                     <footer className="py-12 border-t border-[#d4af37]/5 text-center text-[#a1a1a1] text-xs tracking-[0.2em] uppercase">
                                         <div className="mb-6 flex justify-center gap-12">
-                                            <a href="#" className="hover:text-[#d4af37] transition-colors">Instagram</a>
-                                            <a href="#" className="hover:text-[#d4af37] transition-colors">Facebook</a>
-                                            <a href="#" className="hover:text-[#d4af37] transition-colors">WhatsApp</a>
+                                            <a href="https://instagram.com/aurobarbershop.id" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">Instagram</a>
+                                            <a href="https://tiktok.com/@aurobarbershop.id" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">TikTok</a>
+                                            <a href="https://wa.me/6285219461408" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">WhatsApp</a>
                                         </div>
                                         <p className="cursor-default select-none text-[#a1a1a1]/50">
                                             &copy; 2024 AURO BARBERSHOP. ALL RIGHTS RESERVED.
