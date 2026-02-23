@@ -30,9 +30,9 @@ const Location = () => {
                                 <div>
                                     <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Location</h4>
                                     <p className="text-[#a1a1a1] text-sm leading-relaxed">
-                                        Jl. Pinus 1, Pamulang Bar.<br />
-                                        Kota Tangerang Selatan<br />
-                                        Banten 15417
+                                        Jl. Abdul Muis No.41, Gedong Meneng<br />
+                                        Kec. Rajabasa, Kota Bandar Lampung<br />
+                                        Lampung 35141
                                     </p>
                                     <a
                                         href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
@@ -82,22 +82,26 @@ const Location = () => {
                         transition={{ duration: 0.8 }}
                         className="relative"
                     >
-                        <div className="aspect-video w-full glass-card overflow-hidden group">
-                            {/* Background Map Placeholder */}
-                            <div className="absolute inset-0 bg-[#141414] flex items-center justify-center flex-col gap-4">
-                                <div className="w-20 h-20 rounded-full border border-[#d4af37]/20 flex items-center justify-center animate-pulse">
-                                    <MapPin className="text-[#d4af37]/30" size={40} />
-                                </div>
-                                <span className="text-[#d4af37]/20 uppercase tracking-[0.5em] text-[10px]">Satellite View Placeholder</span>
-                            </div>
+                        <div className="aspect-video w-full glass-card overflow-hidden group relative">
+                            {/* Google Maps Embed */}
+                            <iframe
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15888.807354673673!2d105.2348!3d-5.3852!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e40db0366b72fa1%3A0xeaecc742898c1995!2sJl.%20Abdul%20Muis%20No.41%2C%20Gedong%20Meneng%2C%20Kec.%20Rajabasa%2C%20Kota%20Bandar%20Lampung%2C%20Lampung%2035141!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+                                width="100%"
+                                height="100%"
+                                style={{ border: 0, filter: 'grayscale(100%) invert(90%) contrast(80%) hue-rotate(180deg)', mixBlendMode: 'luminosity' }}
+                                allowFullScreen=""
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                className="absolute inset-0 z-0 opacity-60 group-hover:opacity-80 transition-opacity duration-500"
+                            ></iframe>
 
                             {/* Overlay with CTA */}
-                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-500 z-10 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-all duration-500 z-10 flex items-center justify-center pointer-events-none">
                                 <a
                                     href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="gold-button !text-xs"
+                                    className="gold-button !text-xs pointer-events-auto"
                                 >
                                     Get Directions
                                 </a>
