@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog } from 'lucide-react';
+import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom';

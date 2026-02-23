@@ -16,6 +16,8 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         date: '',
         time: ''
     });
+    const [services, setServices] = useState([]);
+    const [barbers, setBarbers] = useState([]);
 
     const validatePhone = (phone) => {
         const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -84,6 +86,19 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
 
         fetchBookings();
     }, [formData.date, formData.barber, isOpen]);
+
+    // Fetch dynamic options
+    useEffect(() => {
+        if (!isOpen) return;
+        const fetchOptions = async () => {
+            const { data: bData } = await supabase.from('barbers').select('name').eq('is_active', true);
+            if (bData) setBarbers(bData.map(b => b.name));
+
+            const { data: sData } = await supabase.from('services').select('name');
+            if (sData) setServices(sData.map(s => s.name));
+        };
+        fetchOptions();
+    }, [isOpen]);
 
     // Pre-fill fields when opened with initial data
     useEffect(() => {
@@ -323,10 +338,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                                         >
                                             <option value="" disabled>Select Service</option>
-                                            <option value="Mid Fade">Mid Fade</option>
-                                            <option value="Comma Hair">Comma Hair</option>
-                                            <option value="Buzzcut">Buzzcut</option>
-                                            <option value="Two Block">Two Block</option>
+                                            {services.map(s => (
+                                                <option key={s} value={s}>{s}</option>
+                                            ))}
                                         </select>
 
                                         <select
@@ -336,9 +350,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             onChange={(e) => setFormData({ ...formData, barber: e.target.value, time: '' })}
                                         >
                                             <option value="" disabled>Select Barber</option>
-                                            <option value="Master Aris">Master Aris</option>
-                                            <option value="Senior Budi">Senior Budi</option>
-                                            <option value="Artisan Catur">Artisan Catur</option>
+                                            {barbers.map(b => (
+                                                <option key={b} value={b}>{b}</option>
+                                            ))}
                                         </select>
                                     </div>
 

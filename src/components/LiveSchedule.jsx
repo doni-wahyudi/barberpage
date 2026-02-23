@@ -3,14 +3,11 @@ import { motion } from 'framer-motion';
 import { Clock, Users, RefreshCw, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 
-const BARBERS = ['Master Aris', 'Senior Budi', 'Artisan Catur'];
 const TIME_SLOTS = [
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
     "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
     "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
 ];
-const TOTAL_CAPACITY = Math.floor(BARBERS.length * (TIME_SLOTS.length / 2));
-
 const formatDateLabel = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
     const today = new Date();
@@ -25,9 +22,12 @@ const formatDateLabel = (dateStr) => {
 
 const LiveSchedule = ({ onSelectSlot }) => {
     const [bookings, setBookings] = useState([]);
+    const [barbers, setBarbers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+
+    const TOTAL_CAPACITY = Math.floor(Math.max(barbers.length, 1) * (TIME_SLOTS.length / 2));
 
     const today = new Date().toISOString().split('T')[0];
     const isToday = selectedDate === today;
@@ -54,6 +54,16 @@ const LiveSchedule = ({ onSelectSlot }) => {
         } else {
             setBookings(data || []);
         }
+
+        const { data: barberData } = await supabase
+            .from('barbers')
+            .select('name')
+            .eq('is_active', true);
+
+        if (barberData) {
+            setBarbers(barberData.map(b => b.name));
+        }
+
         setLastUpdated(new Date());
         setLoading(false);
     };
@@ -195,7 +205,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
 
                 {/* Per-Barber Timeline */}
                 <div className="space-y-4">
-                    {BARBERS.map((barber, bIndex) => {
+                    {barbers.map((barber, bIndex) => {
                         const barberBookings = bookings.filter(b => b.barber_name === barber);
                         return (
                             <motion.div
