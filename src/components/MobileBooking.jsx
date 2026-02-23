@@ -15,8 +15,8 @@ const MobileBooking = () => {
 
     const [formData, setFormData] = useState({
         type: 'service', // 'service' or 'product' (for future)
-        name: '',
-        phone: '',
+        name: localStorage.getItem('auro_name') || '',
+        phone: localStorage.getItem('auro_phone') || '',
         service: '',
         barber: '',
         date: new Date().toISOString().split('T')[0],
@@ -90,7 +90,7 @@ const MobileBooking = () => {
 
     const handleNext = () => {
         setFormError('');
-        if (step === 2) {
+        if (step === 1) {
             if (formData.type === 'service' && (!formData.service || !formData.barber || !formData.date || !formData.time)) {
                 setFormError('Please select all required options to proceed.');
                 return;
@@ -153,6 +153,11 @@ const MobileBooking = () => {
                     .select();
 
                 if (error) throw error;
+
+                // Save user info for future bookings
+                localStorage.setItem('auro_name', formData.name);
+                localStorage.setItem('auro_phone', formData.phone);
+
                 setSuccessId(newBooking[0].id);
             } else {
                 // Future handling for 'product' purchases
@@ -169,46 +174,7 @@ const MobileBooking = () => {
 
     // --- RENDER HELPERS ---
 
-    const renderStep1TypeSelection = () => (
-        <motion.div
-            key="step1"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="flex flex-col gap-4 w-full"
-        >
-            <h2 className="serif text-3xl font-bold mb-6 text-center">What do you need today?</h2>
 
-            <button
-                onClick={() => { setFormData({ ...formData, type: 'service' }); handleNext(); }}
-                className="glass-card p-6 flex flex-col items-center justify-center gap-4 hover:border-[#d4af37]/50 transition-all group"
-            >
-                <div className="w-16 h-16 rounded-full bg-[#d4af37]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Scissors size={28} className="text-[#d4af37]" />
-                </div>
-                <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Haircut Service</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Book a seat with our masters</p>
-            </button>
-
-            <button
-                onClick={() => { alert("Product purchases are coming in a future update!"); }}
-                className="glass-card p-6 flex flex-col items-center justify-center gap-4 hover:border-[#d4af37]/50 transition-all opacity-50 cursor-not-allowed group w-full"
-            >
-                <div className="w-16 h-16 rounded-full bg-[#1a1a1a] flex items-center justify-center">
-                    <Coffee size={28} className="text-[#555]" />
-                </div>
-                <h3 className="font-bold text-lg uppercase tracking-widest text-[#555]">Products & Coffee</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Pomade, Coffee, etc. (Coming Soon)</p>
-            </button>
-
-            <Link
-                to="/check"
-                className="mt-4 py-4 px-6 bg-[#141414] border border-[#d4af37]/20 hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded-lg text-center text-[#d4af37] flex justify-center items-center gap-2 w-full shadow-lg font-bold"
-            >
-                <Search size={18} /> Find My Active Booking
-            </Link>
-        </motion.div>
-    );
 
     const renderStep2Details = () => (
         <motion.div
@@ -309,9 +275,15 @@ const MobileBooking = () => {
                 </div>
             </div>
 
-            <button onClick={handleNext} className="gold-button w-full mt-4">
+            <button onClick={handleNext} className="gold-button w-full mt-6">
                 Continue to Details
             </button>
+            <Link
+                to="/check"
+                className="mt-4 py-4 px-6 bg-[#141414] border border-[#d4af37]/20 hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded-lg text-center text-[#d4af37] flex justify-center items-center gap-2 w-full shadow-lg font-bold"
+            >
+                <Search size={18} /> Find My Active Booking
+            </Link>
         </motion.div>
     );
 
@@ -392,7 +364,24 @@ const MobileBooking = () => {
                 Open Queue Monitor Now
             </button>
 
-            <p className="text-[10px] uppercase tracking-widest text-[#555]">
+            {/* Coffee & Product Offer */}
+            <div className="mt-6 pt-6 border-t border-[#d4af37]/10 w-full text-center">
+                <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-4">While you wait</p>
+                <button
+                    onClick={() => { alert("Product & Coffee purchases are coming in a future update!"); }}
+                    className="glass-card p-4 flex items-center justify-center gap-4 hover:border-[#d4af37]/50 transition-all opacity-50 cursor-not-allowed group w-full"
+                >
+                    <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center min-w-[40px]">
+                        <Coffee size={20} className="text-[#555]" />
+                    </div>
+                    <div className="text-left flex-1">
+                        <h3 className="font-bold text-sm uppercase tracking-widest text-[#555]">Products & Coffee</h3>
+                        <p className="text-[10px] text-[#a1a1a1] uppercase tracking-wider">Coming Soon</p>
+                    </div>
+                </button>
+            </div>
+
+            <p className="text-[10px] uppercase tracking-widest text-[#555] mt-6">
                 Save this link or use the "Check Order" tool later.
             </p>
         </motion.div>
@@ -407,28 +396,19 @@ const MobileBooking = () => {
                     </button>
                 )}
                 {successId && <div className="w-6" />}
-                <h1 className="serif font-bold text-xl tracking-wider uppercase text-center flex-1">
-                    <span className="text-[#d4af37]">A</span>URO
-                </h1>
+                <div className="flex-1 flex justify-center">
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-6 object-contain" />
+                </div>
                 <div className="w-6"></div>
             </header>
 
             <main className="flex-1 flex flex-col items-center p-6 pt-12 w-full max-w-md mx-auto">
                 <AnimatePresence mode="wait">
                     {successId ? renderSuccess() : (
-                        step === 1 ? renderStep1TypeSelection() :
-                            step === 2 ? renderStep2Details() :
-                                renderStep3Contact()
+                        step === 1 ? renderStep2Details() :
+                            renderStep3Contact()
                     )}
                 </AnimatePresence>
-
-                {!successId && (
-                    <div className="flex gap-2 mt-auto pt-12 pb-4">
-                        <div className={`w-2 h-2 rounded-full ${step === 1 ? 'bg-[#d4af37]' : 'bg-[#333]'}`} />
-                        <div className={`w-2 h-2 rounded-full ${step === 2 ? 'bg-[#d4af37]' : 'bg-[#333]'}`} />
-                        <div className={`w-2 h-2 rounded-full ${step === 3 ? 'bg-[#d4af37]' : 'bg-[#333]'}`} />
-                    </div>
-                )}
             </main>
         </div>
     );

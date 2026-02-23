@@ -35,8 +35,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => isAdminView && onAdminToggle()}
                 >
-                    <Scissors className="text-[#d4af37]" size={24} />
-                    <span className="serif text-xl font-bold tracking-widest text-[#d4af37]">AURO</span>
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-6 object-contain" />
                 </motion.div>
 
                 {/* Desktop Menu */}
