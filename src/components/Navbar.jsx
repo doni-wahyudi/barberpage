@@ -35,7 +35,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => isAdminView && onAdminToggle()}
                 >
-                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-6 object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-10 object-contain" />
                 </motion.div>
 
                 {/* Desktop Menu */}
