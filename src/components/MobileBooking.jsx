@@ -27,15 +27,19 @@ const MobileBooking = () => {
         phone: localStorage.getItem('auro_phone') || '',
         service: '',
         barber: '',
-        date: new Date().toISOString().split('T')[0],
+        date: (() => {
+            const d = new Date();
+            if (d.getDay() === 6) d.setDate(d.getDate() + 1);
+            return d.toISOString().split('T')[0];
+        })(),
         time: '',
         addons: []
     });
 
     const timeSlots = [
-        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+        "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
         "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-        "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
+        "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"
     ];
 
     const parseTime = (t) => {
@@ -224,7 +228,7 @@ const MobileBooking = () => {
 
                 if (existing && existing.length > 0) {
                     setBookedSlots(prev => [...prev, formData.time]);
-                    setFormError('Sorry, slot taken. Please go back and choose another time.');
+                    setFormError('Maaf, slot ini baru saja diambil. Silakan pilih waktu lain.');
                     setLoading(false);
                     return;
                 }
@@ -257,7 +261,7 @@ const MobileBooking = () => {
             } else {
                 // Product-only purchase
                 if (formData.addons.length === 0) {
-                    setFormError('Please select at least one item from the shop.');
+                    setFormError('Silakan pilih minimal satu produk dari toko.');
                     setLoading(false);
                     return;
                 }
@@ -312,7 +316,7 @@ const MobileBooking = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col gap-4 w-full"
         >
-            <h2 className="serif text-3xl font-bold mb-6 text-center">What do you need today?</h2>
+            <h2 className="serif text-3xl font-bold mb-6 text-center">Apa yang Anda butuhkan?</h2>
 
             <button
                 onClick={() => { setFormData({ ...formData, type: 'service' }); handleNext(); }}
@@ -321,8 +325,8 @@ const MobileBooking = () => {
                 <div className="w-16 h-16 rounded-full bg-[#d4af37]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Scissors size={28} className="text-[#d4af37]" />
                 </div>
-                <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Haircut Service</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Book a seat with our masters</p>
+                <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Layanan Cukur</h3>
+                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Reservasi dengan kapster kami</p>
             </button>
 
             <button
@@ -332,15 +336,15 @@ const MobileBooking = () => {
                 <div className="w-16 h-16 rounded-full bg-[#d4af37]/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <Coffee size={28} className="text-[#d4af37]" />
                 </div>
-                <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Shop</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Shop our premium collection</p>
+                <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Toko</h3>
+                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Beli koleksi produk kami</p>
             </button>
 
             <Link
                 to="/check"
                 className="mt-4 py-4 px-6 bg-[#141414] border border-[#d4af37]/20 hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded-lg text-center text-[#d4af37] flex justify-center items-center gap-2 w-full shadow-lg font-bold"
             >
-                <Search size={18} /> Find My Active Booking
+                <Search size={18} /> Cek Status Reservasi
             </Link>
         </motion.div>
     );
@@ -353,7 +357,7 @@ const MobileBooking = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col gap-5 w-full"
         >
-            <h2 className="serif text-3xl font-bold mb-2 text-center">Choose Details</h2>
+            <h2 className="serif text-3xl font-bold mb-2 text-center">Pilih Detail</h2>
             {formError && <p className="text-red-500 text-xs text-center border border-red-500/30 p-2 rounded bg-red-500/10 mb-2">{formError}</p>}
 
             <div className="space-y-4">
@@ -366,7 +370,14 @@ const MobileBooking = () => {
                         className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors text-sm text-white"
                         style={{ colorScheme: 'dark' }}
                         value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value, time: '' })}
+                        onChange={(e) => {
+                            const date = new Date(e.target.value);
+                            if (date.getDay() === 6) {
+                                alert('Mohon maaf, kami tutup pada hari Sabtu.');
+                                return;
+                            }
+                            setFormData({ ...formData, date: e.target.value, time: '' });
+                        }}
                     />
                 </div>
 
@@ -375,7 +386,7 @@ const MobileBooking = () => {
                     value={formData.barber}
                     onChange={(e) => setFormData({ ...formData, barber: e.target.value, time: '' })}
                 >
-                    <option value="" disabled>Select Barber</option>
+                    <option value="" disabled>Pilih Kapster</option>
                     {barbers.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
                 </select>
 
@@ -384,17 +395,17 @@ const MobileBooking = () => {
                     value={formData.service}
                     onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                 >
-                    <option value="" disabled>Select Service</option>
+                    <option value="" disabled>Pilih Layanan</option>
                     {services.map(s => <option key={s.id} value={s.name}>{s.name} - Rp {s.price.toLocaleString('id-ID')}</option>)}
                 </select>
 
                 {formData.date === new Date().toISOString().split('T')[0] && (
                     <div className="mt-6 mb-2">
-                        <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Walk-In (In-Store)</p>
+                        <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Walk-In (Datang Langsung)</p>
                         <button
                             onClick={() => {
                                 if (!formData.barber) {
-                                    setFormError('Please select a Barber first to view walk-in availability.');
+                                    setFormError('Pilih Kapster terlebih dahulu untuk melihat ketersediaan Walk-in.');
                                     return;
                                 }
                                 if (isNowAvailable()) {
@@ -410,12 +421,12 @@ const MobileBooking = () => {
                             `}
                         >
                             <Clock size={16} />
-                            {!formData.barber ? `Check Walk-In for ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Unavailable (Chair Booked)' : `Book Now (${getNowTimeStr()})`)}
+                            {!formData.barber ? `Cek Walk-In untuk ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Penuh (Kursi Sedang Digunakan)' : `Pesan Sekarang (${getNowTimeStr()})`)}
                         </button>
                     </div>
                 )}
 
-                <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mt-6 mb-2">Later Slots</p>
+                <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mt-6 mb-2">Pilihan Waktu Nanti</p>
                 <div className="grid grid-cols-4 gap-2">
                     {timeSlots.map(slot => {
                         const isBooked = isSlotBooked(slot);
@@ -440,13 +451,13 @@ const MobileBooking = () => {
             </div>
 
             <button onClick={handleNext} className="gold-button w-full mt-6">
-                Continue to Details
+                Lanjut ke Detail
             </button>
             <Link
                 to="/check"
                 className="mt-4 py-4 px-6 bg-[#141414] border border-[#d4af37]/20 hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded-lg text-center text-[#d4af37] flex justify-center items-center gap-2 w-full shadow-lg font-bold"
             >
-                <Search size={18} /> Find My Active Booking
+                <Search size={18} /> Cek Status Reservasi
             </Link>
         </motion.div>
     );
@@ -471,17 +482,17 @@ const MobileBooking = () => {
             className="flex flex-col gap-5 w-full"
         >
             <h2 className="serif text-3xl font-bold mb-2 text-center">
-                {formData.type === 'service' ? 'Enhance Your Visit' : 'Auro Shop'}
+                {formData.type === 'service' ? 'Sempurnakan Kunjungan Anda' : 'Toko Auro'}
             </h2>
             <p className="text-[#a1a1a1] text-center text-sm mb-4">
                 {formData.type === 'service'
-                    ? 'Would you like to add any products or drinks to your reservation?'
-                    : 'Select premium items to purchase and pick up in-store.'}
+                    ? 'Apakah Anda ingin menambahkan produk perawatan rambut ke reservasi Anda?'
+                    : 'Pilih produk premium untuk dibeli dan diambil di toko.'}
             </p>
 
             <div className="space-y-4">
                 {products.length === 0 ? (
-                    <p className="text-center text-[#555] text-xs uppercase tracking-widest py-4 border border-[#333] rounded border-dashed">No shop items available yet.</p>
+                    <p className="text-center text-[#555] text-xs uppercase tracking-widest py-4 border border-[#333] rounded border-dashed">Belum ada stok produk tersedia.</p>
                 ) : products.map((product) => {
                     const isSelected = (formData.addons || []).includes(product.name);
                     const formattedPrice = new Intl.NumberFormat('id-ID', {
@@ -517,8 +528,8 @@ const MobileBooking = () => {
 
             <button onClick={handleNext} className="gold-button w-full mt-6">
                 {formData.type === 'product'
-                    ? ((formData.addons || []).length > 0 ? 'Checkout' : 'Select an item to continue')
-                    : ((formData.addons || []).length > 0 ? 'Add & Continue' : 'Skip & Continue')
+                    ? ((formData.addons || []).length > 0 ? 'Selesai Belanja' : 'Pilih barang untuk lanjut')
+                    : ((formData.addons || []).length > 0 ? 'Tambah & Lanjut' : 'Lewati & Lanjut')
                 }
             </button>
         </motion.div>
@@ -553,7 +564,7 @@ const MobileBooking = () => {
                 exit={{ opacity: 0, x: -20 }}
                 className="flex flex-col gap-5 w-full"
             >
-                <h2 className="serif text-3xl font-bold mb-2 text-center">Your Info</h2>
+                <h2 className="serif text-3xl font-bold mb-2 text-center">Informasi Anda</h2>
                 {formError && <p className="text-red-500 text-xs text-center border border-red-500/30 p-2 rounded bg-red-500/10 mb-2">{formError}</p>}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -562,7 +573,7 @@ const MobileBooking = () => {
                         <input
                             required
                             type="text"
-                            placeholder="Full Name (e.g. John Doe)"
+                            placeholder="Nama Lengkap (Cth: Budi Wijaya)"
                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -574,8 +585,8 @@ const MobileBooking = () => {
                         <input
                             required
                             type="tel"
-                            placeholder="Phone (08... or 628...)"
-                            title="Must start with 08 or 628"
+                            placeholder="Telepon (08... atau 628...)"
+                            title="Harus dimulai dengan 08 atau 628"
                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -585,16 +596,16 @@ const MobileBooking = () => {
                     <div className="p-4 bg-[#141414] rounded border border-[#d4af37]/10 mt-6 text-sm">
                         {formData.type === 'service' ? (
                             <>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Date</span> <span>{formData.date}</span></p>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Time</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Barber</span> <span>{formData.barber}</span></p>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Service</span> <span>{formData.service}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Tanggal</span> <span>{formData.date}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Waktu</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Kapster</span> <span>{formData.barber}</span></p>
+                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Layanan</span> <span>{formData.service}</span></p>
                             </>
                         ) : (
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Order</span> <span className="text-[#d4af37] font-bold">Store Pickup</span></p>
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Pesanan</span> <span className="text-[#d4af37] font-bold">Ambil di Toko</span></p>
                         )}
                         {(formData.addons || []).length > 0 && (
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Items' : 'Add-ons'}</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
+                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Produk' : 'Tambahan'}</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
                         )}
                     </div>
 
@@ -602,13 +613,13 @@ const MobileBooking = () => {
                     {bestRedeemableItem && (
                         <div className="bg-[#141414] border border-[#d4af37]/30 rounded-lg p-4 mt-4">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-[#d4af37] font-bold text-sm uppercase tracking-widest">Auro Rewards</span>
+                                <span className="text-[#d4af37] font-bold text-sm uppercase tracking-widest">Hadiah Auro</span>
                                 <span className="text-xs bg-[#d4af37]/20 text-[#d4af37] px-2 py-0.5 rounded font-mono">
-                                    {userPoints} Pts Available
+                                    {userPoints} Pts Tersedia
                                 </span>
                             </div>
                             <p className="text-xs text-[#a1a1a1] mb-3">
-                                You can get <strong className="text-[#d4af37]">{bestRedeemableItem.name}</strong> for free by redeeming {bestRedeemableItem.points_required} PTS!
+                                Anda bisa mendapatkan <strong className="text-[#d4af37]">{bestRedeemableItem.name}</strong> gratis dengan menukarkan {bestRedeemableItem.points_required} PTS!
                             </p>
 
                             <label className="flex items-center gap-3 cursor-pointer group">
@@ -623,14 +634,14 @@ const MobileBooking = () => {
                                     <div className={`absolute left-1 top-1 bg-black w-4 h-4 rounded-full transition-transform ${usePoints ? 'translate-x-4' : 'translate-x-0'}`}></div>
                                 </div>
                                 <span className={`text-sm tracking-wide transition-colors ${usePoints ? 'text-[#d4af37] font-bold' : 'text-[#a1a1a1]'}`}>
-                                    Redeem points for this item
+                                    Tukar poin untuk produk ini
                                 </span>
                             </label>
                         </div>
                     )}
 
                     <div className="text-xs text-[#a1a1a1] text-center my-4">
-                        Your phone number acts as your ticket ID.
+                        Nomor HP Anda berfungsi sebagai ID tiket.
                     </div>
 
                     <button
@@ -638,7 +649,7 @@ const MobileBooking = () => {
                         type="submit"
                         className="gold-button w-full flex items-center justify-center gap-2"
                     >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Confirm Reservation'}
+                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Konfirmasi Reservasi'}
                     </button>
                 </form>
             </motion.div>
@@ -653,20 +664,20 @@ const MobileBooking = () => {
             className="flex flex-col items-center justify-center text-center py-8 w-full"
         >
             <div className="text-[#d4af37] mb-6"><CheckCircle size={80} /></div>
-            <h3 className="serif text-3xl font-bold mb-2">Confirmed</h3>
-            <p className="text-[#a1a1a1] mb-8">Your royal seat is reserved.</p>
+            <h3 className="serif text-3xl font-bold mb-2">Terkonfirmasi</h3>
+            <p className="text-[#a1a1a1] mb-8">Kursi eksklusif Anda telah dipesan.</p>
 
             <button
                 onClick={() => navigate(`/queue/${successId}`)}
                 className="gold-button w-full mb-4"
             >
-                Open Queue Monitor Now
+                Lihat Monitor Antrean
             </button>
 
 
 
             <p className="text-[10px] uppercase tracking-widest text-[#555] mt-6">
-                Save this link or use the "Check Order" tool later.
+                Simpan tautan ini atau gunakan fitur "Cek Reservasi" nanti.
             </p>
         </motion.div>
     );

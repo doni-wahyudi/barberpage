@@ -13,7 +13,11 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         phone: '',
         service: '',
         barber: '',
-        date: '',
+        date: (() => {
+            const d = new Date();
+            if (d.getDay() === 6) d.setDate(d.getDate() + 1);
+            return d.toISOString().split('T')[0];
+        })(),
         time: ''
     });
     const [services, setServices] = useState([]);
@@ -31,9 +35,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     };
 
     const timeSlots = [
-        "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+        "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
         "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-        "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
+        "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"
     ];
 
     const parseTime = (t) => {
@@ -232,7 +236,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         ) : (
                             <>
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="serif text-2xl font-bold">Reserve Your Seat</h3>
+                                    <h3 className="serif text-2xl font-bold">Reservasi Kursi Anda</h3>
                                     <button onClick={onClose} className="text-[#a1a1a1] hover:text-[#d4af37]">
                                         <X size={24} />
                                     </button>
@@ -247,7 +251,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             <input
                                                 required
                                                 type="text"
-                                                placeholder="Full Name"
+                                                placeholder="Nama Lengkap"
                                                 className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -259,7 +263,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             <input
                                                 required
                                                 type="tel"
-                                                placeholder="Phone Number"
+                                                placeholder="Nomor HP"
                                                 className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
                                                 value={formData.phone}
                                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -275,7 +279,14 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors text-sm text-white"
                                                     style={{ colorScheme: 'dark' }}
                                                     value={formData.date}
-                                                    onChange={(e) => setFormData({ ...formData, date: e.target.value, time: '' })}
+                                                    onChange={(e) => {
+                                                        const date = new Date(e.target.value);
+                                                        if (date.getDay() === 6) {
+                                                            alert('Mohon maaf, kami tutup pada hari Sabtu.');
+                                                            return;
+                                                        }
+                                                        setFormData({ ...formData, date: e.target.value, time: '' });
+                                                    }}
                                                 />
                                             </div>
                                             <div className="relative">
@@ -286,7 +297,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     value={formData.time}
                                                     onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                                                 >
-                                                    <option value="" disabled>Select Time</option>
+                                                    <option value="" disabled>Pilih Waktu</option>
                                                     {timeSlots.map(slot => {
                                                         const booked = isSlotBooked(slot);
                                                         return (
@@ -296,7 +307,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                                 disabled={booked}
                                                                 className={booked ? 'text-white/20' : ''}
                                                             >
-                                                                {slot} {booked ? '(Full)' : ''}
+                                                                {slot} {booked ? '(Penuh)' : ''}
                                                             </option>
                                                         );
                                                     })}
@@ -310,7 +321,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     type="button"
                                                     onClick={() => {
                                                         if (!formData.barber) {
-                                                            setFormError('Please select a Barber first to view walk-in availability.');
+                                                            setFormError('Silakan pilih Kapster terlebih dahulu untuk melihat ketersediaan datang langsung.');
                                                             return;
                                                         }
                                                         if (isNowAvailable()) {
@@ -326,7 +337,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     `}
                                                 >
                                                     <Clock size={16} />
-                                                    {!formData.barber ? `Check Walk-In for ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Unavailable (Chair Booked)' : `Book Walk-In (${getNowTimeStr()})`)}
+                                                    {!formData.barber ? `Cek Datang Langsung untuk ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Tidak Tersedia (Penuh)' : `Pesan Datang Langsung (${getNowTimeStr()})`)}
                                                 </button>
                                             </div>
                                         )}
@@ -337,7 +348,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             value={formData.service}
                                             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                                         >
-                                            <option value="" disabled>Select Service</option>
+                                            <option value="" disabled>Pilih Layanan</option>
                                             {services.map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
@@ -349,7 +360,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             value={formData.barber}
                                             onChange={(e) => setFormData({ ...formData, barber: e.target.value, time: '' })}
                                         >
-                                            <option value="" disabled>Select Barber</option>
+                                            <option value="" disabled>Pilih Kapster</option>
                                             {barbers.map(b => (
                                                 <option key={b} value={b}>{b}</option>
                                             ))}
@@ -368,7 +379,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                 className="w-5 h-5 border-2 border-black border-t-transparent rounded-full"
                                             />
                                         ) : (
-                                            'Confirm Booking'
+                                            'KONFIRMASI RESERVASI'
                                         )}
                                     </button>
                                 </form>

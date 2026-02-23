@@ -113,14 +113,14 @@ const AdminServices = () => {
             handleCloseModal();
         } catch (error) {
             console.error('Error saving service:', error);
-            alert('Failed to save service.');
+            alert('Gagal menyimpan layanan.');
         } finally {
             setIsSubmitting(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this service?')) return;
+        if (!window.confirm('Apakah Anda yakin ingin menghapus layanan ini?')) return;
 
         try {
             const { error } = await supabase
@@ -132,7 +132,7 @@ const AdminServices = () => {
             setServices(services.filter(s => s.id !== id));
         } catch (error) {
             console.error('Error deleting service:', error);
-            alert('Failed to delete service.');
+            alert('Gagal menghapus layanan.');
         }
     };
 
@@ -160,22 +160,22 @@ const AdminServices = () => {
                     onClick={() => navigate('/_studio_admin')}
                     className="flex items-center gap-2 text-[#a1a1a1] hover:text-[#d4af37] transition-colors"
                 >
-                    <ArrowLeft size={20} /> Back to Dashboard
+                    <ArrowLeft size={20} /> Kembali ke Dasbor
                 </button>
             </header>
 
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
                     <div>
-                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Haircuts & Add-ons</span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Manage Services</h2>
+                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Cukur & Tambahan</span>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Kelola Layanan</h2>
                     </div>
 
                     <button
                         onClick={() => handleOpenModal()}
                         className="flex items-center gap-2 px-6 py-3 bg-[#d4af37] hover:bg-[#b5952f] transition-all rounded text-sm font-bold text-black"
                     >
-                        <Plus size={18} /> Add Service
+                        <Plus size={18} /> Tambah Layanan
                     </button>
                 </div>
 
@@ -186,7 +186,7 @@ const AdminServices = () => {
                 ) : services.length === 0 ? (
                     <div className="glass-card p-12 text-center text-[#a1a1a1] flex flex-col items-center gap-4">
                         <Scissors size={48} className="opacity-20" />
-                        <p>No services available yet.<br />Click "Add Service" to create your first one.</p>
+                        <p>Belum ada layanan yang tersedia.<br />Klik "Tambah Layanan" untuk membuat layanan pertama Anda.</p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -201,7 +201,7 @@ const AdminServices = () => {
                                 >
                                     {service.is_redeemable && (
                                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-3 py-1 uppercase tracking-widest z-10">
-                                            {service.points_required} PTS Reward
+                                            {service.points_required} Poin Hadiah
                                         </div>
                                     )}
                                     <div className="h-48 w-full bg-[#141414] relative flex-shrink-0 border-b border-[#333]">
@@ -258,16 +258,16 @@ const AdminServices = () => {
                             className="bg-[#121212] border border-[#d4af37]/20 w-full max-w-md rounded-xl p-6 shadow-2xl relative my-8"
                         >
                             <h3 className="serif text-2xl font-bold mb-6 text-white text-center">
-                                {editingService ? 'Edit Service' : 'Add New Service'}
+                                {editingService ? 'Edit Layanan' : 'Tambah Layanan Baru'}
                             </h3>
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Service Name <span className="text-red-500">*</span></label>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Nama Layanan <span className="text-red-500">*</span></label>
                                     <input
                                         required
                                         type="text"
-                                        placeholder="e.g. Mid Fade"
+                                        placeholder="Cth: Cukur Premium"
                                         className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -275,7 +275,7 @@ const AdminServices = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Price (IDR) <span className="text-red-500">*</span></label>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Harga (IDR) <span className="text-red-500">*</span></label>
                                     <input
                                         required
                                         type="number"
@@ -288,10 +288,10 @@ const AdminServices = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Description</label>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Deskripsi</label>
                                     <textarea
                                         rows="3"
-                                        placeholder="Service details..."
+                                        placeholder="Detail layanan..."
                                         className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white text-sm"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -299,7 +299,7 @@ const AdminServices = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Image URL (Optional)</label>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">URL Gambar (Opsional)</label>
                                     <input
                                         type="url"
                                         placeholder="https://example.com/image.jpg"
@@ -321,7 +321,7 @@ const AdminServices = () => {
                                             <div className={`block w-10 h-6 rounded-full transition-colors ${formData.is_redeemable ? 'bg-[#d4af37]' : 'bg-[#333]'}`}></div>
                                             <div className={`absolute left-1 top-1 bg-black w-4 h-4 rounded-full transition-transform ${formData.is_redeemable ? 'translate-x-4' : 'translate-x-0'}`}></div>
                                         </div>
-                                        <span className="text-sm font-bold">Available as Reward?</span>
+                                        <span className="text-sm font-bold">Tersedia sebagai Hadiah?</span>
                                     </label>
 
                                     {formData.is_redeemable && (
@@ -329,12 +329,12 @@ const AdminServices = () => {
                                             initial={{ opacity: 0, height: 0 }}
                                             animate={{ opacity: 1, height: 'auto' }}
                                         >
-                                            <label className="block text-xs uppercase tracking-widest text-[#d4af37] mb-2">Points Required to Redeem</label>
+                                            <label className="block text-xs uppercase tracking-widest text-[#d4af37] mb-2">Poin yang Dibutuhkan untuk Menukar</label>
                                             <input
                                                 required={formData.is_redeemable}
                                                 type="number"
                                                 min="0"
-                                                placeholder="e.g. 500"
+                                                placeholder="Cth: 500"
                                                 className="w-full bg-[#1a1a1a] border border-[#d4af37]/50 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider text-[#d4af37]"
                                                 value={formData.points_required}
                                                 onChange={(e) => setFormData({ ...formData, points_required: e.target.value })}
@@ -349,14 +349,14 @@ const AdminServices = () => {
                                         onClick={handleCloseModal}
                                         className="flex-1 py-3 bg-transparent border border-[#333] hover:border-[#a1a1a1] transition-colors text-white rounded text-sm font-bold uppercase tracking-widest"
                                     >
-                                        Cancel
+                                        Batal
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
                                         className="flex-1 py-3 bg-[#d4af37] hover:bg-[#b5952f] transition-colors text-black rounded text-sm font-bold uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
-                                        {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Save'}
+                                        {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : 'Simpan'}
                                     </button>
                                 </div>
                             </form>

@@ -1,0 +1,40 @@
+
+> dcukur-web@1.0.0 build
+> vite build
+
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+[32m✓[39m 15 modules transformed.
+[31mx[39m Build failed in 623ms
+[31merror during build:
+[31m[vite:esbuild] Transform failed with 2 errors:
+C:/Users/whydo/OneDrive - PT Bank BTPN Syariah, Tbk/Office Workspace/Eskplorasi/experiment/dcukur_web/src/components/LiveSchedule.jsx:39:10: ERROR: The symbol "selectedDate" has already been declared
+C:/Users/whydo/OneDrive - PT Bank BTPN Syariah, Tbk/Office Workspace/Eskplorasi/experiment/dcukur_web/src/components/LiveSchedule.jsx:39:10: ERROR: The symbol "setSelectedDate" has already been declared[31m
+file: [36mC:/Users/whydo/OneDrive - PT Bank BTPN Syariah, Tbk/Office Workspace/Eskplorasi/experiment/dcukur_web/src/components/LiveSchedule.jsx:39:10[31m
+[33m
+[33mThe symbol "selectedDate" has already been declared[33m
+37 |  
+38 |      const today = new Date().toISOString().split('T')[0];
+39 |      const [selectedDate, setSelectedDate] = useState(getInitialDate());
+   |            ^
+40 |      const isToday = selectedDate === today;
+41 |  
+
+[33mThe symbol "setSelectedDate" has already been declared[33m
+37 |  
+38 |      const today = new Date().toISOString().split('T')[0];
+39 |      const [selectedDate, setSelectedDate] = useState(getInitialDate());
+   |            ^
+40 |      const isToday = selectedDate === today;
+41 |  
+[31m
+    at failureErrorWithLog (C:\Users\whydo\OneDrive - PT Bank BTPN Syariah, Tbk\Office Workspace\Eskplorasi\experiment\dcukur_web\node_modules\esbuild\lib\main.js:1472:15)
+    at C:\Users\whydo\OneDrive - PT Bank BTPN Syariah, Tbk\Office Workspace\Eskplorasi\experiment\dcukur_web\node_modules\esbuild\lib\main.js:755:50
+    at responseCallbacks.<computed> (C:\Users\whydo\OneDrive - PT Bank BTPN Syariah, Tbk\Office Workspace\Eskplorasi\experiment\dcukur_web\node_modules\esbuild\lib\main.js:622:9)
+    at handleIncomingPacket (C:\Users\whydo\OneDrive - PT Bank BTPN Syariah, Tbk\Office Workspace\Eskplorasi\experiment\dcukur_web\node_modules\esbuild\lib\main.js:677:12)
+    at Socket.readFromStdout (C:\Users\whydo\OneDrive - PT Bank BTPN Syariah, Tbk\Office Workspace\Eskplorasi\experiment\dcukur_web\node_modules\esbuild\lib\main.js:600:7)
+    at Socket.emit (node:events:508:28)
+    at addChunk (node:internal/streams/readable:559:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+    at Readable.push (node:internal/streams/readable:390:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)[39m

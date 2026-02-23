@@ -30,7 +30,7 @@ const CheckOrder = () => {
         setError('');
 
         if (!validatePhone(formData.phone)) {
-            setError('Please enter a valid Indonesian phone number starting with 08 or 628.');
+            setError('Silakan masukkan nomor telepon Indonesia yang valid (diawali 08 atau 628).');
             return;
         }
 
@@ -57,11 +57,11 @@ const CheckOrder = () => {
                 const bookingId = data[0].id;
                 navigate(`/queue/${bookingId}`);
             } else {
-                setError("We couldn't find an active upcoming booking with that name and phone number.");
+                setError("Kami tidak dapat menemukan reservasi aktif dengan nama dan nomor telepon tersebut.");
             }
         } catch (err) {
             console.error('Check order error:', err);
-            setError('Connection error. Please try again.');
+            setError('Koneksi bermasalah. Silakan coba lagi.');
         } finally {
             setLoading(false);
         }
@@ -75,7 +75,7 @@ const CheckOrder = () => {
                     <ArrowLeft size={24} />
                 </button>
                 <h1 className="serif font-bold text-xl tracking-wider uppercase text-center flex-1">
-                    Check <span className="text-[#d4af37]">Order</span>
+                    Cek <span className="text-[#d4af37]">Reservasi</span>
                 </h1>
                 <div className="w-6"></div> {/* Spacer */}
             </header>
@@ -90,9 +90,9 @@ const CheckOrder = () => {
 
                     <div className="text-center mb-8">
                         <Search className="mx-auto text-[#d4af37] mb-4" size={40} />
-                        <h2 className="serif text-2xl font-bold mb-2">Find Your Queue</h2>
+                        <h2 className="serif text-2xl font-bold mb-2">Cari Antrean Anda</h2>
                         <p className="text-[#a1a1a1] text-sm">
-                            Enter the details you used to book your seat.
+                            Masukkan detail yang Anda gunakan saat reservasi.
                         </p>
                     </div>
 
@@ -106,12 +106,12 @@ const CheckOrder = () => {
                     <form onSubmit={handleCheck} className="space-y-5">
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold tracking-widest text-[#a1a1a1] ml-1">
-                                Exact Name
+                                Nama Lengkap Sesuai Reservasi
                             </label>
                             <input
                                 required
                                 type="text"
-                                placeholder="E.g., John Doe"
+                                placeholder="Cth: Budi Wijaya"
                                 className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors"
                                 value={formData.name}
                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -120,12 +120,12 @@ const CheckOrder = () => {
 
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold tracking-widest text-[#a1a1a1] ml-1">
-                                Phone Number
+                                Nomor HP
                             </label>
                             <input
                                 required
                                 type="tel"
-                                placeholder="08... or 628..."
+                                placeholder="08... atau 628..."
                                 className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider"
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -140,7 +140,7 @@ const CheckOrder = () => {
                             {loading ? (
                                 <Loader2 className="animate-spin" size={20} />
                             ) : (
-                                'Search Order'
+                                'Cari Antrean'
                             )}
                         </button>
                     </form>

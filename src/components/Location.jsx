@@ -4,9 +4,9 @@ import { MapPin, Clock, Phone, Mail, Instagram, ExternalLink } from 'lucide-reac
 
 const Location = () => {
     const operatingHours = [
-        { day: "Monday - Friday", time: "10:00 AM - 09:00 PM" },
-        { day: "Saturday", time: "10:00 AM - 08:00 PM" },
-        { day: "Sunday", time: "Closed" }
+        { day: "Senin - Jumat", time: "10:00 - 22:00" },
+        { day: "Sabtu", time: "Tutup" },
+        { day: "Minggu", time: "10:00 - 22:00" }
     ];
 
     return (
@@ -19,8 +19,8 @@ const Location = () => {
                         whileInView={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Find Us</span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2 mb-8">The Studio</h2>
+                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Temukan Kami</span>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2 mb-8">Studio Kami</h2>
 
                         <div className="space-y-8">
                             <div className="flex gap-6">
@@ -28,7 +28,7 @@ const Location = () => {
                                     <MapPin className="text-[#d4af37]" size={20} />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Location</h4>
+                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Lokasi</h4>
                                     <p className="text-[#a1a1a1] text-sm leading-relaxed">
                                         Jl. Abdul Muis No.41, Gedong Meneng<br />
                                         Kec. Rajabasa, Kota Bandar Lampung<br />
@@ -40,7 +40,7 @@ const Location = () => {
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 text-[#d4af37] text-xs mt-3 uppercase tracking-widest font-bold hover:underline"
                                     >
-                                        Open in Maps <ExternalLink size={12} />
+                                        Buka di Maps <ExternalLink size={12} />
                                     </a>
                                 </div>
                             </div>
@@ -50,7 +50,7 @@ const Location = () => {
                                     <Clock className="text-[#d4af37]" size={20} />
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="font-bold text-white mb-3 uppercase tracking-widest text-sm">Operating Hours</h4>
+                                    <h4 className="font-bold text-white mb-3 uppercase tracking-widest text-sm">Jam Operasional</h4>
                                     <div className="space-y-2">
                                         {operatingHours.map((item, i) => (
                                             <div key={i} className="flex justify-between border-b border-[#d4af37]/5 pb-2">
@@ -67,7 +67,7 @@ const Location = () => {
                                     <Phone className="text-[#d4af37]" size={20} />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Contact</h4>
+                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Kontak</h4>
                                     <p className="text-[#a1a1a1] text-sm">+62 852 1946 1408</p>
                                     <p className="text-[#a1a1a1] text-sm font-mono mt-1">IG: aurobarbershop.id</p>
                                     <p className="text-[#a1a1a1] text-sm font-mono">TikTok: aurobarbershop.id</p>
@@ -103,7 +103,7 @@ const Location = () => {
                                     rel="noopener noreferrer"
                                     className="gold-button !text-xs pointer-events-auto"
                                 >
-                                    Get Directions
+                                    Dapatkan Petunjuk Arah
                                 </a>
                             </div>
                         </div>

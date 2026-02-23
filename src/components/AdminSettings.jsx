@@ -42,7 +42,7 @@ const AdminSettings = () => {
                 }
             } catch (err) {
                 console.error('Error fetching settings:', err);
-                setError('Failed to load settings.');
+                setError('Gagal memuat pengaturan.');
             } finally {
                 setLoading(false);
             }
@@ -70,11 +70,11 @@ const AdminSettings = () => {
 
             if (updateError) throw updateError;
 
-            setSuccessMessage('Settings saved successfully!');
+            setSuccessMessage('Pengaturan berhasil disimpan!');
             setTimeout(() => setSuccessMessage(''), 3000);
         } catch (err) {
             console.error('Error saving settings:', err);
-            setError('Failed to save settings.');
+            setError('Gagal menyimpan pengaturan.');
         } finally {
             setSaving(false);
         }
@@ -95,12 +95,12 @@ const AdminSettings = () => {
                     onClick={() => navigate('/_studio_admin')}
                     className="flex items-center gap-2 text-[#a1a1a1] hover:text-white transition-colors"
                 >
-                    <ArrowLeft size={20} /> Back to Studio
+                    <ArrowLeft size={20} /> Kembali ke Studio
                 </button>
                 <div className="text-right">
-                    <span className="uppercase tracking-[0.3em] text-[#d4af37] text-[10px] font-bold">Configuration</span>
+                    <span className="uppercase tracking-[0.3em] text-[#d4af37] text-[10px] font-bold">Konfigurasi</span>
                     <h1 className="serif text-2xl font-bold flex items-center gap-2 justify-end">
-                        <Settings size={24} className="text-[#d4af37]" /> App Settings
+                        <Settings size={24} className="text-[#d4af37]" /> Pengaturan Aplikasi
                     </h1>
                 </div>
             </header>
@@ -114,7 +114,7 @@ const AdminSettings = () => {
                     <div className="absolute top-0 left-0 w-full h-1 bg-[#d4af37]"></div>
 
                     <h2 className="text-xl font-bold mb-6 text-[#d4af37] uppercase tracking-widest text-sm text-center border-b border-[#333] pb-4">
-                        Loyalty Program Configuration
+                        Konfigurasi Program Loyalitas
                     </h2>
 
                     {error && (
@@ -132,10 +132,10 @@ const AdminSettings = () => {
                     <form onSubmit={handleSave} className="space-y-6">
                         {/* Transaction Earning */}
                         <div className="bg-[#141414] p-6 rounded-lg border border-[#333] space-y-4">
-                            <h3 className="font-bold text-white uppercase tracking-widest text-xs border-b border-[#333] pb-2">Earning Points (Transactions)</h3>
+                            <h3 className="font-bold text-white uppercase tracking-widest text-xs border-b border-[#333] pb-2">Mendapatkan Poin (Transaksi)</h3>
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                                 <label className="text-sm text-[#a1a1a1] leading-relaxed max-w-sm">
-                                    How many Points does a customer earn for every <strong>Rp 1.000</strong> they spend on Services or Products?
+                                    Berapa Poin yang didapatkan pelanggan untuk setiap kelipatan <strong>Rp 1.000</strong> yang mereka belanjakan untuk Layanan/Produk?
                                 </label>
                                 <div className="flex items-center gap-2 bg-[#0a0a0a] border border-[#d4af37]/30 rounded p-2 focus-within:border-[#d4af37] transition-colors">
                                     <input
@@ -147,18 +147,18 @@ const AdminSettings = () => {
                                         min="0"
                                         required
                                     />
-                                    <span className="text-xs text-[#d4af37] font-bold uppercase tracking-widest pr-2">Pts</span>
+                                    <span className="text-xs text-[#d4af37] font-bold uppercase tracking-widest pr-2">Poin</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Review Earning */}
                         <div className="bg-[#141414] p-6 rounded-lg border border-[#333] space-y-6">
-                            <h3 className="font-bold text-white uppercase tracking-widest text-xs border-b border-[#333] pb-2">Earning Points (Reviews)</h3>
+                            <h3 className="font-bold text-white uppercase tracking-widest text-xs border-b border-[#333] pb-2">Mendapatkan Poin (Ulasan)</h3>
 
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                                 <label className="text-sm text-[#a1a1a1] leading-relaxed max-w-sm">
-                                    Points awarded for submitting a rating and review directly in the <strong>App</strong>.
+                                    Poin yang diberikan saat mengirimkan penilaian dan ulasan langsung di dalam <strong>Aplikasi</strong>.
                                 </label>
                                 <div className="flex items-center gap-2 bg-[#0a0a0a] border border-[#d4af37]/30 rounded p-2 focus-within:border-[#d4af37] transition-colors">
                                     <input
@@ -170,13 +170,13 @@ const AdminSettings = () => {
                                         min="0"
                                         required
                                     />
-                                    <span className="text-xs text-[#d4af37] font-bold uppercase tracking-widest pr-2">Pts</span>
+                                    <span className="text-xs text-[#d4af37] font-bold uppercase tracking-widest pr-2">Poin</span>
                                 </div>
                             </div>
 
                             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                                 <label className="text-sm text-[#a1a1a1] leading-relaxed max-w-sm">
-                                    Points awarded for clicking the <strong>Google Maps</strong> review button (Honor System).
+                                    Poin yang diberikan karena mengklik tautan ulasan <strong>Google Maps</strong>.
                                 </label>
                                 <div className="flex items-center gap-2 bg-[#0a0a0a] border border-[#d4af37]/30 rounded p-2 focus-within:border-[#d4af37] transition-colors">
                                     <input
@@ -188,7 +188,7 @@ const AdminSettings = () => {
                                         min="0"
                                         required
                                     />
-                                    <span className="text-xs text-[#d4af37] font-bold uppercase tracking-widest pr-2">Pts</span>
+                                    <span className="text-xs text-[#d4af37] font-bold uppercase tracking-widest pr-2">Poin</span>
                                 </div>
                             </div>
                         </div>
@@ -200,7 +200,7 @@ const AdminSettings = () => {
                                 disabled={saving}
                                 className="w-full gold-button flex flex-row items-center justify-center gap-2"
                             >
-                                {saving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> Save Configuration</>}
+                                {saving ? <Loader2 className="animate-spin" size={20} /> : <><Save size={20} /> Simpan Konfigurasi</>}
                             </button>
                         </div>
                     </form>

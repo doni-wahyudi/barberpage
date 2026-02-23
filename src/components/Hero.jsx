@@ -66,19 +66,19 @@ const Hero = ({ onBooking }) => {
                     style={{ opacity }}
                 >
                     <p className="uppercase tracking-[0.5em] text-[#d4af37] text-sm mb-4">
-                        The Royalty of Grooming
+                        Rapih Tanpa Ribet
                     </p>
                     <h2 className="serif text-5xl md:text-8xl font-bold mb-8 leading-tight">
-                        Elevate Your <br />
-                        <span className="gold-gradient italic">Legendary</span> Look
+                        Tingkatkan Penampilan <br />
+                        <span className="gold-gradient italic">Legendaris</span> Anda
                     </h2>
                     <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-                        <button onClick={onBooking} className="gold-button">Reserve Your Seat</button>
+                        <button onClick={onBooking} className="gold-button">Reservasi Sekarang</button>
                         <button
                             onClick={() => document.getElementById('lookbook')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all"
                         >
-                            View Lookbook
+                            Lihat Gaya
                         </button>
                     </div>
                 </motion.div>
@@ -89,8 +89,8 @@ const Hero = ({ onBooking }) => {
                 style={{ y: y2 }}
                 className="absolute bottom-10 left-10 md:left-20 border-l border-[#d4af37] pl-4 hidden md:block"
             >
-                <p className="text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-2">Since 2024</p>
-                <p className="serif italic text-[#d4af37]">Crafted with Precision</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-2">Sejak 2024</p>
+                <p className="serif italic text-[#d4af37]">Dibuat dengan Presisi</p>
             </motion.div>
 
             <div className="absolute bottom-10 right-10 md:right-20 hidden md:block">

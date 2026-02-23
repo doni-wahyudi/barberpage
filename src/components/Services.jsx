@@ -35,9 +35,9 @@ const Services = ({ onSelectService }) => {
                         whileInView={{ opacity: 1 }}
                         className="uppercase tracking-[0.3em] text-[#d4af37] text-xs"
                     >
-                        The Menu
+                        Pilihan Menu
                     </motion.span>
-                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Executive Services</h2>
+                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Layanan Eksekutif</h2>
                 </div>
 
                 {loading ? (
@@ -87,7 +87,7 @@ const Services = ({ onSelectService }) => {
                                             </span>
                                         </div>
                                         <p className="text-sm text-[#a1a1a1] leading-relaxed line-clamp-3">
-                                            {service.description || "Premium haircut experience by Auro Barbershop."}
+                                            {service.description || "Pengalaman potong rambut premium oleh Auro Barbershop."}
                                         </p>
                                     </div>
                                     <div className="mt-auto pt-4 border-t border-[#d4af37]/10 flex justify-between items-center">
@@ -95,11 +95,11 @@ const Services = ({ onSelectService }) => {
                                             onClick={() => onSelectService && onSelectService(service.name)}
                                             className="text-[10px] uppercase tracking-widest text-[#d4af37] font-bold hover:translate-x-2 transition-transform inline-flex items-center gap-2"
                                         >
-                                            Book This Service
+                                            Pesan Layanan Ini
                                         </button>
                                         {service.is_redeemable && (
                                             <span className="text-[9px] bg-[#d4af37]/10 text-[#d4af37] px-2 py-1 rounded font-mono font-bold">
-                                                REDEEM: {service.points_required} PTS
+                                                TUKAR: {service.points_required} PTS
                                             </span>
                                         )}
                                     </div>

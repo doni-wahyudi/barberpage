@@ -179,49 +179,49 @@ const AdminPanel = () => {
                         onClick={() => navigate('/_studio_admin/products')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
-                        <Package size={16} /> Manage Shop
+                        <Package size={16} /> Kelola Toko
                     </button>
                     <button
                         onClick={() => navigate('/_studio_admin/services')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
-                        <Scissors size={16} /> Services
+                        <Scissors size={16} /> Layanan
                     </button>
                     <button
                         onClick={() => navigate('/_studio_admin/capsters')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
-                        <UserCog size={16} /> Capsters
+                        <UserCog size={16} /> Kapster
                     </button>
                     <button
                         onClick={() => navigate('/_studio_admin/settings')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
-                        <Settings size={16} /> App Settings
+                        <Settings size={16} /> Pengaturan Aplikasi
                     </button>
                     <button
                         onClick={() => navigate('/_studio_admin/insights')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
-                        <Users size={16} /> Customer CRM
+                        <Users size={16} /> CRM Pelanggan
                     </button>
                     <button
                         onClick={async () => await supabase.auth.signOut()}
                         className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors rounded text-sm font-bold"
                     >
-                        <LogOut size={16} /> Logout
+                        <LogOut size={16} /> Keluar
                     </button>
                 </div>
             </header>
             <div className="max-w-7xl mx-auto">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
                     <div>
-                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Studio Control</span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Booking Management</h2>
+                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Kontrol Studio</span>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Manajemen Reservasi</h2>
                     </div>
 
                     <div className="flex items-center gap-4 glass-card p-4">
-                        <Calendar size={18} className="text-[#d4af37]" />
+                        <CalendarIcon size={18} className="text-[#d4af37]" />
                         <input
                             type="date"
                             className="bg-transparent border-none text-white focus:outline-none text-sm cursor-pointer"
@@ -236,12 +236,12 @@ const AdminPanel = () => {
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-[#d4af37]/10 bg-[#141414]/50">
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Customer</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Service</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Barber</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Time</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Pelanggan</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Layanan</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Kapster</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Waktu</th>
                                     <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Status</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Actions</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -249,13 +249,13 @@ const AdminPanel = () => {
                                     {loading ? (
                                         <tr>
                                             <td colSpan="6" className="p-12 text-center text-[#a1a1a1] italic">
-                                                Polishing the details...
+                                                Memuat rincian reservasi...
                                             </td>
                                         </tr>
                                     ) : bookings.length === 0 ? (
                                         <tr>
                                             <td colSpan="6" className="p-12 text-center text-[#a1a1a1] italic">
-                                                No appointments found for this date.
+                                                Tidak ada janji temu ditemukan untuk tanggal ini.
                                             </td>
                                         </tr>
                                     ) : bookings.map((booking) => (
@@ -273,11 +273,11 @@ const AdminPanel = () => {
                                                             {booking.customer_name}
                                                             {booking.visitCount && booking.visitCount > 1 ? (
                                                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#d4af37]/20 border border-[#d4af37]/40 text-[#d4af37] text-[10px] font-bold tracking-widest uppercase ml-2">
-                                                                    <Star size={10} className="fill-[#d4af37]" /> {booking.visitCount} visits
+                                                                    <Star size={10} className="fill-[#d4af37]" /> {booking.visitCount} kunjungan
                                                                 </span>
                                                             ) : (
                                                                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/20 border border-green-500/40 text-green-400 text-[10px] font-bold tracking-widest uppercase ml-2">
-                                                                    New
+                                                                    Baru
                                                                 </span>
                                                             )}
                                                         </h3>
@@ -296,11 +296,11 @@ const AdminPanel = () => {
                                                 </div>
                                             </td>
                                             <td className="p-6">
-                                                <div className={`text - [10px] uppercase font - bold tracking - widest ${getStatusColor(booking.status)} `}>
-                                                    App: {booking.status}
+                                                <div className={`text-[10px] uppercase font-bold tracking-widest ${getStatusColor(booking.status)}`}>
+                                                    Rsv: {booking.status}
                                                 </div>
-                                                <div className={`text - [10px] uppercase font - bold tracking - widest mt - 1 ${getQueueStatusColor(booking.queue_status)} `}>
-                                                    Queue: {booking.queue_status || 'waiting'}
+                                                <div className={`text-[10px] uppercase font-bold tracking-widest mt-1 ${getQueueStatusColor(booking.queue_status)}`}>
+                                                    Antrian: {booking.queue_status || 'waiting'}
                                                 </div>
                                             </td>
                                             <td className="p-6">
@@ -309,38 +309,38 @@ const AdminPanel = () => {
                                                         <button
                                                             onClick={() => updateStatus(booking, { queue_status: 'in_progress' })}
                                                             className="px-2 py-1 text-[10px] font-bold border border-green-400/50 text-green-400 hover:bg-green-400/20 rounded transition-colors"
-                                                            title="Start Service"
+                                                            title="Mulai Layanan"
                                                         >
-                                                            START
+                                                            MULAI
                                                         </button>
                                                     )}
                                                     {(booking.queue_status === 'late' || booking.queue_status === 'late_arrived') && (
                                                         <button
                                                             onClick={() => updateStatus(booking, { queue_status: 'skipped', status: 'cancelled' })}
                                                             className="px-2 py-1 text-[10px] font-bold border border-red-500/50 text-red-500 hover:bg-red-500/20 rounded transition-colors"
-                                                            title="Skip Late Customer"
+                                                            title="Lewati Pelanggan Terlambat"
                                                         >
-                                                            SKIP
+                                                            LEWATI
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => updateStatus(booking, { status: 'confirmed' })}
                                                         className="p-1 glass-card hover:bg-blue-500/20 text-blue-400 transition-colors"
-                                                        title="Confirm Booking"
+                                                        title="Konfirmasi Reservasi"
                                                     >
                                                         <Check size={14} />
                                                     </button>
                                                     <button
                                                         onClick={() => updateStatus(booking, { status: 'completed', queue_status: 'completed' })}
                                                         className="p-1 glass-card hover:bg-[#d4af37]/20 text-[#d4af37] transition-colors"
-                                                        title="Complete Masterpiece"
+                                                        title="Selesaikan Layanan"
                                                     >
                                                         <Scissors size={14} />
                                                     </button>
                                                     <button
                                                         onClick={() => updateStatus(booking, { status: 'cancelled', queue_status: 'skipped' })}
                                                         className="p-1 glass-card hover:bg-red-500/20 text-red-500 transition-colors"
-                                                        title="Cancel Appointment"
+                                                        title="Batalkan Reservasi"
                                                     >
                                                         <X size={14} />
                                                     </button>

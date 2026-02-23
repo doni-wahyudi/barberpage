@@ -28,12 +28,12 @@ const Lookbook = () => {
                             whileInView={{ opacity: 1 }}
                             className="uppercase tracking-[0.3em] text-[#d4af37] text-xs"
                         >
-                            The Gallery
+                            Galeri
                         </motion.span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">The Mastery Lookbook</h2>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Gaya Rambut Mahakarya</h2>
                     </div>
                     <p className="max-w-md text-[#a1a1a1] text-sm leading-relaxed">
-                        Explore our latest work and find the style that defines your legend. Each cut is a masterpiece of precision and character.
+                        Jelajahi karya terbaru kami dan temukan gaya yang mendefinisikan legenda Anda. Setiap potongan rambut adalah mahakarya presisi dan karakter.
                     </p>
                 </div>
 
@@ -47,7 +47,7 @@ const Lookbook = () => {
                             className="relative aspect-square overflow-hidden group border border-[#d4af37]/5"
                         >
                             <div className="absolute inset-0 bg-[#141414] flex items-center justify-center text-[#d4af37]/20 text-xs uppercase tracking-widest font-bold">
-                                AURO PORTFOLIO
+                                PORTOFOLIO AURO
                             </div>
 
                             <img

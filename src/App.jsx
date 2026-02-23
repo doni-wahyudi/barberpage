@@ -70,13 +70,13 @@ function App() {
                                     <section id="booking" className="py-24 border-t border-[#d4af37]/10 bg-gradient-to-b from-[#0a0a0a] to-[#141414]">
                                         <div className="max-w-4xl mx-auto px-6 text-center">
                                             <h2 className="serif text-4xl md:text-6xl font-bold mb-8 italic">
-                                                Ready to redefine your <span className="text-[#d4af37]">Identity</span>?
+                                                Siap mendefinisikan ulang <span className="text-[#d4af37]">Identitas</span> Anda?
                                             </h2>
                                             <button
                                                 onClick={openBooking}
                                                 className="gold-button !text-lg !px-12 !py-5"
                                             >
-                                                Book Your Seat Now
+                                                Pesan Kursi Sekarang
                                             </button>
                                         </div>
                                     </section>
@@ -89,7 +89,7 @@ function App() {
                                             <a href="https://wa.me/6285219461408" target="_blank" rel="noopener noreferrer" className="hover:text-[#d4af37] transition-colors">WhatsApp</a>
                                         </div>
                                         <p className="cursor-default select-none text-[#a1a1a1]/50">
-                                            &copy; 2024 AURO BARBERSHOP. ALL RIGHTS RESERVED.
+                                            &copy; {new Date().getFullYear()} AURO BARBERSHOP. HAK CIPTA DILINDUNGI.
                                         </p>
                                     </footer>
                                     <WhatsAppButton />

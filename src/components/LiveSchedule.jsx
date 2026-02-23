@@ -4,9 +4,9 @@ import { Clock, Users, RefreshCw, Calendar, ChevronLeft, ChevronRight } from 'lu
 import { supabase } from '../lib/supabaseClient';
 
 const TIME_SLOTS = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
+    "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
     "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-    "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00"
+    "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"
 ];
 const formatDateLabel = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
@@ -15,9 +15,9 @@ const formatDateLabel = (dateStr) => {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (date.getTime() === today.getTime()) return "Today's Schedule";
-    if (date.getTime() === tomorrow.getTime()) return "Tomorrow's Schedule";
-    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    if (date.getTime() === today.getTime()) return "Jadwal Hari Ini";
+    if (date.getTime() === tomorrow.getTime()) return "Jadwal Besok";
+    return date.toLocaleDateString('id-ID', { weekday: 'long', month: 'long', day: 'numeric' });
 };
 
 const LiveSchedule = ({ onSelectSlot }) => {
@@ -25,18 +25,30 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const [barbers, setBarbers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const getInitialDate = () => {
+        const d = new Date();
+        if (d.getDay() === 6) { d.setDate(d.getDate() + 1); }
+        return d.toISOString().split('T')[0];
+    };
 
+    const [selectedDate, setSelectedDate] = useState(getInitialDate());
     const TOTAL_CAPACITY = Math.floor(Math.max(barbers.length, 1) * (TIME_SLOTS.length / 2));
-
     const today = new Date().toISOString().split('T')[0];
     const isToday = selectedDate === today;
 
-    const changeDate = (offset) => {
+    const changeDate = (days) => {
         const d = new Date(selectedDate + 'T00:00:00');
-        d.setDate(d.getDate() + offset);
-        const minDate = new Date();
-        minDate.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + days);
+
+        // Skip Saturday (6)
+        if (d.getDay() === 6) {
+            d.setDate(d.getDate() + (days > 0 ? 1 : -1));
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const minDate = today;
+
         if (d >= minDate) {
             setSelectedDate(d.toISOString().split('T')[0]);
         }
@@ -79,9 +91,9 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const trafficPercent = Math.round((bookedCount / TOTAL_CAPACITY) * 100);
 
     const getTrafficLabel = () => {
-        if (trafficPercent < 30) return { text: 'Low Traffic', color: 'text-green-400', barColor: 'bg-green-400' };
-        if (trafficPercent < 65) return { text: 'Moderate', color: 'text-yellow-400', barColor: 'bg-yellow-400' };
-        return { text: 'Busy', color: 'text-red-400', barColor: 'bg-red-400' };
+        if (trafficPercent < 30) return { text: 'Sepi', color: 'text-green-400', barColor: 'bg-green-400' };
+        if (trafficPercent < 65) return { text: 'Sedang', color: 'text-yellow-400', barColor: 'bg-yellow-400' };
+        return { text: 'Sibuk', color: 'text-red-400', barColor: 'bg-red-400' };
     };
 
     const traffic = getTrafficLabel();
@@ -125,7 +137,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                             whileInView={{ opacity: 1 }}
                             className="uppercase tracking-[0.3em] text-[#d4af37] text-xs"
                         >
-                            Live Updates
+                            Pembaruan Langsung
                         </motion.span>
                         <h2 className="serif text-4xl md:text-5xl font-bold mt-2">{formatDateLabel(selectedDate)}</h2>
                     </div>
@@ -145,7 +157,14 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                     type="date"
                                     value={selectedDate}
                                     min={today}
-                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    onChange={(e) => {
+                                        const date = new Date(e.target.value);
+                                        if (date.getDay() === 6) {
+                                            alert('Jadwal tidak tersedia (Tutup pada hari Sabtu).');
+                                            return;
+                                        }
+                                        setSelectedDate(e.target.value);
+                                    }}
                                     className="bg-transparent border-none text-white text-xs focus:outline-none cursor-pointer"
                                     style={{ colorScheme: 'dark' }}
                                 />
@@ -180,7 +199,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                         <div className="flex items-center gap-3">
                             <Users size={20} className="text-[#d4af37]" />
                             <span className="text-sm font-semibold uppercase tracking-wider">
-                                {isToday ? 'Current Traffic' : 'Booking Status'}
+                                {isToday ? 'Keramaian Saat Ini' : 'Status Reservasi'}
                             </span>
                         </div>
                         <div className="flex items-center gap-3">
@@ -188,7 +207,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                 {traffic.text}
                             </span>
                             <span className="text-[#a1a1a1] text-xs">
-                                {bookedCount}/{TOTAL_CAPACITY} slots booked
+                                {bookedCount}/{TOTAL_CAPACITY} slot dipesan
                             </span>
                         </div>
                     </div>
@@ -226,7 +245,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                         <div>
                                             <p className="text-sm font-semibold">{barber}</p>
                                             <p className="text-[10px] text-[#a1a1a1]">
-                                                {barberBookings.length}/{TIME_SLOTS.length} booked
+                                                {barberBookings.length}/{TIME_SLOTS.length} dipesan
                                             </p>
                                         </div>
                                     </div>
@@ -267,7 +286,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                                             </span>
                                                         ) : (
                                                             <span className={`text-[8px] mt-0.5 ${isPast || isBlocked ? 'text-[#333]' : 'text-[#555]'}`}>
-                                                                {isPast ? '—' : isBlocked ? 'Wait' : 'Open'}
+                                                                {isPast ? '—' : isBlocked ? 'Antre' : 'Kosong'}
                                                             </span>
                                                         )}
                                                     </div>
@@ -285,16 +304,16 @@ const LiveSchedule = ({ onSelectSlot }) => {
                 <div className="flex flex-wrap gap-6 mt-6 text-[10px] text-[#a1a1a1] uppercase tracking-widest">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-[#d4af37]/15 border border-[#d4af37]/30" />
-                        <span>Booked</span>
+                        <span>Dipesan</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-[#1a1a1a] border border-[#1f1f1f]" />
-                        <span>Available</span>
+                        <span>Tersedia</span>
                     </div>
                     {isToday && (
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded ring-1 ring-[#d4af37]/50 bg-[#1a1a1a]" />
-                            <span>Current Hour</span>
+                            <span>Jam Saat Ini</span>
                         </div>
                     )}
                 </div>

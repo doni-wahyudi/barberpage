@@ -223,7 +223,7 @@ const QueueMonitor = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white">
                 <Loader2 className="animate-spin text-[#d4af37] mb-4" size={40} />
-                <p className="text-[#a1a1a1] uppercase tracking-widest text-xs">Finding Your Seat...</p>
+                <p className="text-[#a1a1a1] uppercase tracking-widest text-xs">Sedang Mencari Tiket Anda...</p>
             </div>
         );
     }
@@ -232,10 +232,10 @@ const QueueMonitor = () => {
         return (
             <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] text-white p-6 text-center">
                 <AlertCircle className="text-red-500 mb-4" size={50} />
-                <h2 className="text-2xl font-bold mb-2 serif italic">Oops!</h2>
+                <h2 className="text-2xl font-bold mb-2 serif italic">Ups!</h2>
                 <p className="text-[#a1a1a1] mb-8">{error}</p>
                 <button onClick={() => navigate('/')} className="gold-button">
-                    Return to Home
+                    Kembali ke Beranda
                 </button>
             </div>
         );
@@ -262,32 +262,32 @@ const QueueMonitor = () => {
     const isLateArrived = queue_status === 'late_arrived';
     const isSkipped = queue_status === 'skipped';
 
-    let statusText = "Waiting for your turn";
+    let statusText = "Menunggu giliran Anda";
     let statusColor = "text-yellow-400";
     let statusBg = "bg-yellow-400/10 border-yellow-400/30";
 
     if (isCompleted) {
-        statusText = "Completed - Thank you!";
+        statusText = "Selesai - Terima kasih!";
         statusColor = "text-green-400";
         statusBg = "bg-green-400/10 border-green-400/30";
     } else if (isCancelled) {
-        statusText = "Cancelled";
+        statusText = "Dibatalkan";
         statusColor = "text-red-400";
         statusBg = "bg-red-400/10 border-red-400/30";
     } else if (isSkipped) {
-        statusText = "Skipped - Please see Admin";
+        statusText = "Dilewati - Silakan temui Admin";
         statusColor = "text-red-400";
         statusBg = "bg-red-400/10 border-red-400/30";
     } else if (isLateArrived) {
-        statusText = "Arrived Late - Waiting for slot";
+        statusText = "Datang Terlambat - Menunggu giliran";
         statusColor = "text-orange-400";
         statusBg = "bg-orange-400/10 border-orange-400/30";
     } else if (isLate) {
-        statusText = "Late - Schedule Invalidated";
+        statusText = "Terlambat - Jadwal Kedaluwarsa";
         statusColor = "text-red-500";
         statusBg = "bg-red-500/10 border-red-500/30";
     } else if (queue_status === 'in_progress') {
-        statusText = "It's your turn!";
+        statusText = "Giliran Anda!";
         statusColor = "text-green-400";
         statusBg = "bg-green-400/10 border-green-400/30";
     }
@@ -315,7 +315,7 @@ const QueueMonitor = () => {
                     <div className={`absolute top-0 left-0 w-full h-1 ${isLate || isSkipped || isCancelled ? 'bg-red-500' : isCompleted || queue_status === 'in_progress' ? 'bg-green-500' : 'bg-[#d4af37]'}`}></div>
 
                     <div className="text-center mb-8">
-                        <p className="text-xs uppercase tracking-[0.2em] text-[#a1a1a1] mb-2">Customer Seat</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-[#a1a1a1] mb-2">Tiket Pelanggan</p>
                         <h2 className="serif text-3xl font-bold italic">{customer_name}</h2>
                     </div>
 
@@ -328,7 +328,7 @@ const QueueMonitor = () => {
                         )}
                         {isLate && !isLateArrived && !isSkipped && !isCompleted && !isCancelled && (
                             <p className="text-[10px] text-center text-[#a1a1a1] mt-2">
-                                You missed your 10-minute window. Your slot may be given to the next customer.
+                                Anda melewati batas waktu 10 menit. Giliran Anda mungkin diberikan kepada pelanggan berikutnya.
                             </p>
                         )}
                     </div>
@@ -337,7 +337,7 @@ const QueueMonitor = () => {
                         <div className="flex items-start gap-4">
                             <Clock className="text-[#d4af37] mt-1" size={20} />
                             <div>
-                                <p className="text-xs text-[#a1a1a1] uppercase tracking-widest">Schedule</p>
+                                <p className="text-xs text-[#a1a1a1] uppercase tracking-widest">Jadwal</p>
                                 <p className="font-semibold">{dateStr}</p>
                                 <p className="text-xl font-mono text-[#d4af37]">{timeStr}</p>
                             </div>
@@ -346,7 +346,7 @@ const QueueMonitor = () => {
                         <div className="flex items-start gap-4">
                             <Scissors className="text-[#d4af37] mt-1" size={20} />
                             <div>
-                                <p className="text-xs text-[#a1a1a1] uppercase tracking-widest">Service</p>
+                                <p className="text-xs text-[#a1a1a1] uppercase tracking-widest">Layanan</p>
                                 <p className="font-semibold">{service_type}</p>
                             </div>
                         </div>
@@ -354,7 +354,7 @@ const QueueMonitor = () => {
                         <div className="flex items-start gap-4">
                             <User className="text-[#d4af37] mt-1" size={20} />
                             <div>
-                                <p className="text-xs text-[#a1a1a1] uppercase tracking-widest">Barber</p>
+                                <p className="text-xs text-[#a1a1a1] uppercase tracking-widest">Kapster</p>
                                 <p className="font-semibold">{barber_name}</p>
                             </div>
                         </div>
@@ -371,10 +371,10 @@ const QueueMonitor = () => {
                                 onClick={handleManualTrigger}
                                 className="w-full py-4 bg-[#1a1a1a] border border-[#d4af37]/50 text-[#d4af37] rounded uppercase tracking-widest text-xs font-bold hover:bg-[#d4af37] hover:text-black transition-all"
                             >
-                                I'm Here Now (Check-In)
+                                Saya Sudah Sampai (Check-In)
                             </button>
                             <p className="text-[9px] text-center text-[#555] mt-3 uppercase">
-                                Action subject to barber availability
+                                Persetujuan tergantung ketersediaan kapster
                             </p>
                         </motion.div>
                     )}
@@ -456,7 +456,7 @@ const QueueMonitor = () => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center gap-2 text-[#555] text-xs uppercase tracking-widest font-bold">
-                                            <Star size={14} className="fill-[#555]" /> Bonus Points Claimed
+                                            <Star size={14} className="fill-[#555]" /> Poin Bonus Diklaim
                                         </div>
                                     )}
                                 </div>
