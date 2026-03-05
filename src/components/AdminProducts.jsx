@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Package, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AdminProducts = () => {
     const navigate = useNavigate();
@@ -28,6 +28,7 @@ const AdminProducts = () => {
             const { data, error } = await supabase
                 .from('products')
                 .select('*')
+                .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -165,6 +166,60 @@ const AdminProducts = () => {
         }
     };
 
+    const handleMove = async (index, direction) => {
+        if (
+            (direction === 'up' && index === 0) ||
+            (direction === 'down' && index === products.length - 1)
+        ) return;
+
+        const newProducts = [...products];
+        let needsFullSync = false;
+
+        // Initialize sort_order if they are identical or empty
+        for (let i = 0; i < newProducts.length; i++) {
+            if (newProducts[i].sort_order === null || newProducts[i].sort_order === undefined) {
+                newProducts[i].sort_order = i;
+                needsFullSync = true;
+            }
+        }
+        if (newProducts[index].sort_order === newProducts[direction === 'up' ? index - 1 : index + 1].sort_order) {
+            needsFullSync = true;
+            newProducts.forEach((p, i) => p.sort_order = i);
+        }
+
+        const swapIndex = direction === 'up' ? index - 1 : index + 1;
+        const currentItem = newProducts[index];
+        const targetItem = newProducts[swapIndex];
+
+        // Swap their sort orders
+        const tempOrder = currentItem.sort_order;
+        currentItem.sort_order = targetItem.sort_order;
+        targetItem.sort_order = tempOrder;
+
+        // Swap in array
+        newProducts[index] = targetItem;
+        newProducts[swapIndex] = currentItem;
+
+        setProducts([...newProducts]);
+
+        try {
+            if (needsFullSync) {
+                const promises = newProducts.map(p =>
+                    supabase.from('products').update({ sort_order: p.sort_order }).eq('id', p.id)
+                );
+                await Promise.all(promises);
+            } else {
+                await Promise.all([
+                    supabase.from('products').update({ sort_order: currentItem.sort_order }).eq('id', currentItem.id),
+                    supabase.from('products').update({ sort_order: targetItem.sort_order }).eq('id', targetItem.id)
+                ]);
+            }
+        } catch (error) {
+            console.error('Error updating sort order:', error);
+            fetchProducts();
+        }
+    };
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -220,7 +275,7 @@ const AdminProducts = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 md:grid-cols-4 gap-6">
                         <AnimatePresence>
-                            {products.map((product) => (
+                            {products.map((product, index) => (
                                 <motion.div
                                     key={product.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -228,6 +283,24 @@ const AdminProducts = () => {
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     className="glass-card overflow-hidden flex flex-col relative"
                                 >
+                                    <div className="absolute top-3 left-3 flex gap-1 z-20">
+                                        <button
+                                            onClick={() => handleMove(index, 'up')}
+                                            disabled={index === 0}
+                                            className="w-8 h-8 rounded bg-black/80 text-white flex items-center justify-center hover:bg-[#d4af37] hover:text-black transition-colors backdrop-blur-sm disabled:opacity-30 disabled:hover:bg-black/80 disabled:hover:text-white"
+                                            title="Geser Kiri/Atas"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleMove(index, 'down')}
+                                            disabled={index === products.length - 1}
+                                            className="w-8 h-8 rounded bg-black/80 text-white flex items-center justify-center hover:bg-[#d4af37] hover:text-black transition-colors backdrop-blur-sm disabled:opacity-30 disabled:hover:bg-black/80 disabled:hover:text-white"
+                                            title="Geser Kanan/Bawah"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
                                     {product.is_redeemable && (
                                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-3 py-1 uppercase tracking-widest z-10">
                                             {product.points_required} Poin Hadiah
@@ -242,7 +315,7 @@ const AdminProducts = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-5 flex-1 flex flex-col">
+                                    <div className="p-5 flex-1 flex flex-col pt-6">
                                         <h3 className="font-bold text-lg mb-1 line-clamp-2">{product.name}</h3>
                                         <p className="text-[#d4af37] font-mono font-bold mb-4">{formatPrice(product.price)}</p>
 

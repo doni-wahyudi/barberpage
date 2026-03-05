@@ -36,6 +36,11 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const today = new Date().toISOString().split('T')[0];
     const isToday = selectedDate === today;
 
+    // Limit to 7 days from today
+    const maxDateObj = new Date();
+    maxDateObj.setDate(maxDateObj.getDate() + 7);
+    const maxDateStr = maxDateObj.toISOString().split('T')[0];
+
     const changeDate = (days) => {
         const d = new Date(selectedDate + 'T00:00:00');
         d.setDate(d.getDate() + days);
@@ -49,7 +54,11 @@ const LiveSchedule = ({ onSelectSlot }) => {
         today.setHours(0, 0, 0, 0);
         const minDate = today;
 
-        if (d >= minDate) {
+        const maxLimit = new Date();
+        maxLimit.setDate(maxLimit.getDate() + 7);
+        maxLimit.setHours(0, 0, 0, 0);
+
+        if (d >= minDate && d <= maxLimit) {
             setSelectedDate(d.toISOString().split('T')[0]);
         }
     };
@@ -57,7 +66,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const fetchBookings = async () => {
         const { data, error } = await supabase
             .from('bookings')
-            .select('booking_time, barber_name, service_type, status')
+            .select('booking_time, barber_name, service_type, status, customer_name')
             .eq('booking_date', selectedDate)
             .neq('status', 'cancelled');
 
@@ -141,7 +150,34 @@ const LiveSchedule = ({ onSelectSlot }) => {
                         </motion.span>
                         <h2 className="serif text-4xl md:text-5xl font-bold mt-2">{formatDateLabel(selectedDate)}</h2>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                        {/* Quick Buttons */}
+                        <div className="flex gap-2 text-xs font-bold uppercase tracking-widest">
+                            <button
+                                onClick={() => {
+                                    const d = new Date();
+                                    if (d.getDay() === 6) d.setDate(d.getDate() + 1);
+                                    setSelectedDate(d.toISOString().split('T')[0]);
+                                }}
+                                className={`px-4 py-2 rounded transition-colors ${selectedDate === today || (new Date().getDay() === 6 && selectedDate === new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0]) ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'}`}
+                            >
+                                Hari Ini
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const d = new Date();
+                                    d.setDate(d.getDate() + 1);
+                                    if (d.getDay() === 6) d.setDate(d.getDate() + 1); // skip saturday
+                                    setSelectedDate(d.toISOString().split('T')[0]);
+                                }}
+                                className={`px-4 py-2 rounded transition-colors ${selectedDate === new Date(new Date().setDate(new Date().getDate() + 1 + (new Date(new Date().setDate(new Date().getDate() + 1)).getDay() === 6 ? 1 : 0))).toISOString().split('T')[0]
+                                        ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'
+                                    }`}
+                            >
+                                Besok
+                            </button>
+                        </div>
+
                         {/* Date Navigation */}
                         <div className="flex items-center gap-2 glass-card px-3 py-2">
                             <button
@@ -157,6 +193,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                     type="date"
                                     value={selectedDate}
                                     min={today}
+                                    max={maxDateStr}
                                     onChange={(e) => {
                                         const date = new Date(e.target.value);
                                         if (date.getDay() === 6) {
@@ -171,7 +208,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
                             </div>
                             <button
                                 onClick={() => changeDate(1)}
-                                className="p-1 rounded text-[#a1a1a1] hover:text-[#d4af37] transition-colors"
+                                disabled={selectedDate >= maxDateStr}
+                                className={`p-1 rounded transition-colors ${selectedDate >= maxDateStr ? 'text-[#333] cursor-not-allowed' : 'text-[#a1a1a1] hover:text-[#d4af37]'}`}
                             >
                                 <ChevronRight size={16} />
                             </button>
@@ -300,8 +338,56 @@ const LiveSchedule = ({ onSelectSlot }) => {
                     })}
                 </div>
 
+                {/* Scheduled Customers List */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="mt-12"
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <Users className="text-[#d4af37]" size={24} />
+                        <h3 className="serif text-2xl font-bold">Daftar Pelanggan Terjadwal</h3>
+                    </div>
+
+                    {bookings.length === 0 ? (
+                        <div className="glass-card p-8 text-center text-[#a1a1a1]">
+                            Belum ada jadwal reservasi pelanggan untuk tanggal ini.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[...bookings]
+                                .sort((a, b) => a.booking_time.localeCompare(b.booking_time))
+                                .map((booking, idx) => (
+                                    <motion.div
+                                        key={idx}
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        whileInView={{ opacity: 1, scale: 1 }}
+                                        viewport={{ once: true }}
+                                        transition={{ delay: idx * 0.05 }}
+                                        className="glass-card p-4 flex items-center justify-between hover:border-[#d4af37]/30 transition-colors"
+                                    >
+                                        <div>
+                                            <p className="font-bold text-sm uppercase tracking-wider">{booking.customer_name || 'Hamba Allah'}</p>
+                                            <p className="text-xs text-[#a1a1a1] mt-1">Kapster: <span className="text-white">{booking.barber_name}</span></p>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="flex items-center gap-1 justify-end text-[#d4af37] font-mono font-bold text-lg">
+                                                <Clock size={14} />
+                                                <span>{booking.booking_time.substring(0, 5)}</span>
+                                            </div>
+                                            <div className="text-[10px] text-[#555] uppercase tracking-widest mt-1">
+                                                {booking.status === 'completed' ? 'Selesai' : 'Terjadwal'}
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                        </div>
+                    )}
+                </motion.div>
+
                 {/* Legend */}
-                <div className="flex flex-wrap gap-6 mt-6 text-[10px] text-[#a1a1a1] uppercase tracking-widest">
+                <div className="flex flex-wrap gap-6 mt-8 text-[10px] text-[#a1a1a1] uppercase tracking-widest">
                     <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded bg-[#d4af37]/15 border border-[#d4af37]/30" />
                         <span>Dipesan</span>

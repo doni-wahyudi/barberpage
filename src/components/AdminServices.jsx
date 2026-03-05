@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Scissors, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Scissors, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AdminServices = () => {
     const navigate = useNavigate();
@@ -29,6 +29,7 @@ const AdminServices = () => {
             const { data, error } = await supabase
                 .from('services')
                 .select('*')
+                .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
@@ -167,6 +168,60 @@ const AdminServices = () => {
         }
     };
 
+    const handleMove = async (index, direction) => {
+        if (
+            (direction === 'up' && index === 0) ||
+            (direction === 'down' && index === services.length - 1)
+        ) return;
+
+        const newServices = [...services];
+        let needsFullSync = false;
+
+        // Initialize sort_order if they are identical or empty
+        for (let i = 0; i < newServices.length; i++) {
+            if (newServices[i].sort_order === null || newServices[i].sort_order === undefined) {
+                newServices[i].sort_order = i;
+                needsFullSync = true;
+            }
+        }
+        if (newServices[index].sort_order === newServices[direction === 'up' ? index - 1 : index + 1].sort_order) {
+            needsFullSync = true;
+            newServices.forEach((s, i) => s.sort_order = i);
+        }
+
+        const swapIndex = direction === 'up' ? index - 1 : index + 1;
+        const currentItem = newServices[index];
+        const targetItem = newServices[swapIndex];
+
+        // Swap their sort orders
+        const tempOrder = currentItem.sort_order;
+        currentItem.sort_order = targetItem.sort_order;
+        targetItem.sort_order = tempOrder;
+
+        // Swap in array
+        newServices[index] = targetItem;
+        newServices[swapIndex] = currentItem;
+
+        setServices([...newServices]);
+
+        try {
+            if (needsFullSync) {
+                const promises = newServices.map(s =>
+                    supabase.from('services').update({ sort_order: s.sort_order }).eq('id', s.id)
+                );
+                await Promise.all(promises);
+            } else {
+                await Promise.all([
+                    supabase.from('services').update({ sort_order: currentItem.sort_order }).eq('id', currentItem.id),
+                    supabase.from('services').update({ sort_order: targetItem.sort_order }).eq('id', targetItem.id)
+                ]);
+            }
+        } catch (error) {
+            console.error('Error updating sort order:', error);
+            fetchServices();
+        }
+    };
+
     const formatPrice = (price) => {
         return new Intl.NumberFormat('id-ID', {
             style: 'currency',
@@ -222,7 +277,7 @@ const AdminServices = () => {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <AnimatePresence>
-                            {services.map((service) => (
+                            {services.map((service, index) => (
                                 <motion.div
                                     key={service.id}
                                     initial={{ opacity: 0, scale: 0.95 }}
@@ -230,6 +285,24 @@ const AdminServices = () => {
                                     exit={{ opacity: 0, scale: 0.95 }}
                                     className="glass-card overflow-hidden flex flex-col relative"
                                 >
+                                    <div className="absolute top-3 left-3 flex gap-1 z-20">
+                                        <button
+                                            onClick={() => handleMove(index, 'up')}
+                                            disabled={index === 0}
+                                            className="w-8 h-8 rounded bg-black/80 text-white flex items-center justify-center hover:bg-[#d4af37] hover:text-black transition-colors backdrop-blur-sm disabled:opacity-30 disabled:hover:bg-black/80 disabled:hover:text-white"
+                                            title="Geser Kiri/Atas"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleMove(index, 'down')}
+                                            disabled={index === services.length - 1}
+                                            className="w-8 h-8 rounded bg-black/80 text-white flex items-center justify-center hover:bg-[#d4af37] hover:text-black transition-colors backdrop-blur-sm disabled:opacity-30 disabled:hover:bg-black/80 disabled:hover:text-white"
+                                            title="Geser Kanan/Bawah"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
                                     {service.is_redeemable && (
                                         <div className="absolute top-0 right-0 bg-[#d4af37] text-black text-[10px] font-bold px-3 py-1 uppercase tracking-widest z-10">
                                             {service.points_required} Poin Hadiah
@@ -244,7 +317,7 @@ const AdminServices = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-5 flex-1 flex flex-col">
+                                    <div className="p-5 flex-1 flex flex-col pt-6">
                                         <h3 className="font-bold text-lg mb-1">{service.name}</h3>
                                         <p className="text-[#d4af37] font-mono font-bold">{formatPrice(service.price)}</p>
                                         <p className="text-sm text-[#a1a1a1] mt-3 line-clamp-3 leading-relaxed">{service.description}</p>

@@ -14,6 +14,7 @@ const Lookbook = () => {
                     .from('gallery_images')
                     .select('*')
                     .eq('is_active', true)
+                    .order('sort_order', { ascending: true })
                     .order('created_at', { ascending: false })
                     .limit(6); // Only show top 6 on landing page
 

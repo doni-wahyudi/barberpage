@@ -89,8 +89,8 @@ const MobileBooking = () => {
 
         const fetchData = async () => {
             const [productsRes, servicesRes, barbersRes] = await Promise.all([
-                supabase.from('products').select('*'),
-                supabase.from('services').select('*'),
+                supabase.from('products').select('*').order('sort_order', { ascending: true }),
+                supabase.from('services').select('*').order('sort_order', { ascending: true }),
                 supabase.from('barbers').select('*').eq('is_active', true)
             ]);
             if (productsRes.data) setProducts(productsRes.data);

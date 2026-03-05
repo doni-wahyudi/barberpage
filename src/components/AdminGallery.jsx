@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AdminGallery = () => {
     const navigate = useNavigate();
@@ -28,6 +28,7 @@ const AdminGallery = () => {
             const { data, error } = await supabase
                 .from('gallery_images')
                 .select('*')
+                .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -166,6 +167,60 @@ const AdminGallery = () => {
         }
     };
 
+    const handleMove = async (index, direction) => {
+        if (
+            (direction === 'up' && index === 0) ||
+            (direction === 'down' && index === images.length - 1)
+        ) return;
+
+        const newImages = [...images];
+        let needsFullSync = false;
+
+        // Initialize sort_order if they are identical or empty
+        for (let i = 0; i < newImages.length; i++) {
+            if (newImages[i].sort_order === null || newImages[i].sort_order === undefined) {
+                newImages[i].sort_order = i;
+                needsFullSync = true;
+            }
+        }
+        if (newImages[index].sort_order === newImages[direction === 'up' ? index - 1 : index + 1].sort_order) {
+            needsFullSync = true;
+            newImages.forEach((img, i) => img.sort_order = i);
+        }
+
+        const swapIndex = direction === 'up' ? index - 1 : index + 1;
+        const currentItem = newImages[index];
+        const targetItem = newImages[swapIndex];
+
+        // Swap their sort orders
+        const tempOrder = currentItem.sort_order;
+        currentItem.sort_order = targetItem.sort_order;
+        targetItem.sort_order = tempOrder;
+
+        // Swap in array
+        newImages[index] = targetItem;
+        newImages[swapIndex] = currentItem;
+
+        setImages([...newImages]);
+
+        try {
+            if (needsFullSync) {
+                const promises = newImages.map(img =>
+                    supabase.from('gallery_images').update({ sort_order: img.sort_order }).eq('id', img.id)
+                );
+                await Promise.all(promises);
+            } else {
+                await Promise.all([
+                    supabase.from('gallery_images').update({ sort_order: currentItem.sort_order }).eq('id', currentItem.id),
+                    supabase.from('gallery_images').update({ sort_order: targetItem.sort_order }).eq('id', targetItem.id)
+                ]);
+            }
+        } catch (error) {
+            console.error('Error updating sort order:', error);
+            fetchImages();
+        }
+    };
+
     if (authChecking) {
         return (
             <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
@@ -215,7 +270,7 @@ const AdminGallery = () => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {images.map((img) => (
+                        {images.map((img, index) => (
                             <motion.div
                                 key={img.id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -230,6 +285,24 @@ const AdminGallery = () => {
                                             <ImageIcon size={64} />
                                         </div>
                                     )}
+                                    <div className="absolute top-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                            onClick={() => handleMove(index, 'up')}
+                                            disabled={index === 0}
+                                            className="w-8 h-8 rounded bg-black/80 text-white flex items-center justify-center hover:bg-[#d4af37] hover:text-black transition-colors backdrop-blur-sm disabled:opacity-30 disabled:hover:bg-black/80 disabled:hover:text-white"
+                                            title="Geser Kiri"
+                                        >
+                                            <ChevronLeft size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleMove(index, 'down')}
+                                            disabled={index === images.length - 1}
+                                            className="w-8 h-8 rounded bg-black/80 text-white flex items-center justify-center hover:bg-[#d4af37] hover:text-black transition-colors backdrop-blur-sm disabled:opacity-30 disabled:hover:bg-black/80 disabled:hover:text-white"
+                                            title="Geser Kanan"
+                                        >
+                                            <ChevronRight size={16} />
+                                        </button>
+                                    </div>
                                     <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
                                             onClick={() => handleOpenModal(img)}
