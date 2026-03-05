@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee, Loader2, Search, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import CircularTimePicker from './CircularTimePicker';
 
 const MobileBooking = () => {
     const navigate = useNavigate();
@@ -36,12 +37,8 @@ const MobileBooking = () => {
         addons: []
     });
 
-    const timeSlots = [
-        "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-        "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"
-    ];
-
+    // Time generation block removed since CircularTimePicker handles its own array.
+    // parseTime & isSlotBooked now live in both places, or we keep them here for backend validation.
     const parseTime = (t) => {
         const [h, m] = t.split(':').map(Number);
         return h * 60 + m;
@@ -376,7 +373,7 @@ const MobileBooking = () => {
                                 alert('Mohon maaf, kami tutup pada hari Sabtu.');
                                 return;
                             }
-                            setFormData({ ...formData, date: e.target.value, time: '' });
+                            setFormData({ ...formData, date: e.target.value });
                         }}
                     />
                 </div>
@@ -384,7 +381,7 @@ const MobileBooking = () => {
                 <select
                     className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
                     value={formData.barber}
-                    onChange={(e) => setFormData({ ...formData, barber: e.target.value, time: '' })}
+                    onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
                 >
                     <option value="" disabled>Pilih Kapster</option>
                     {barbers.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
@@ -416,8 +413,7 @@ const MobileBooking = () => {
                             className={`
                                 py-3 w-full text-sm font-mono font-bold rounded transition-colors border flex items-center justify-center gap-2
                                 ${formData.barber && !isNowAvailable() ? 'bg-[#1a1a1a] border-[#1f1f1f] text-[#333] cursor-not-allowed' :
-                                    (!timeSlots.includes(formData.time) && formData.time !== '') ? 'bg-[#d4af37] text-black border-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.3)]' :
-                                        'bg-[#141414] border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10'}
+                                    'bg-[#141414] border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10'}
                             `}
                         >
                             <Clock size={16} />
@@ -426,27 +422,13 @@ const MobileBooking = () => {
                     </div>
                 )}
 
-                <p className="text-xs uppercase tracking-widest text-[#a1a1a1] mt-6 mb-2">Pilihan Waktu Nanti</p>
-                <div className="grid grid-cols-4 gap-2">
-                    {timeSlots.map(slot => {
-                        const isBooked = isSlotBooked(slot);
-                        const isSelected = formData.time === slot;
-                        return (
-                            <button
-                                key={slot}
-                                disabled={isBooked}
-                                onClick={() => setFormData({ ...formData, time: slot })}
-                                className={`
-                                    py-2 text-xs font-mono rounded transition-colors border
-                                    ${isBooked ? 'bg-[#1a1a1a] border-[#1f1f1f] text-[#333] cursor-not-allowed' :
-                                        isSelected ? 'bg-[#d4af37]/20 border-[#d4af37] text-[#d4af37]' :
-                                            'bg-[#141414] border-[#d4af37]/20 text-[#a1a1a1] hover:border-[#d4af37]/50'}
-                                `}
-                            >
-                                {slot}
-                            </button>
-                        );
-                    })}
+                <div className="relative z-50">
+                    <CircularTimePicker
+                        value={formData.time}
+                        onChange={(time) => setFormData({ ...formData, time })}
+                        bookedSlots={bookedSlots}
+                        interval={10}
+                    />
                 </div>
             </div>
 

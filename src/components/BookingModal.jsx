@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, User, Phone, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import CircularTimePicker from './CircularTimePicker';
 
 const BookingModal = ({ isOpen, onClose, initialData }) => {
     const [loading, setLoading] = useState(false);
@@ -34,11 +35,6 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         return true;
     };
 
-    const timeSlots = [
-        "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-        "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-        "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"
-    ];
 
     const parseTime = (t) => {
         const [h, m] = t.split(':').map(Number);
@@ -285,33 +281,17 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                             alert('Mohon maaf, kami tutup pada hari Sabtu.');
                                                             return;
                                                         }
-                                                        setFormData({ ...formData, date: e.target.value, time: '' });
+                                                        setFormData({ ...formData, date: e.target.value });
                                                     }}
                                                 />
                                             </div>
                                             <div className="relative">
-                                                <Clock size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
-                                                <select
-                                                    required
-                                                    className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors text-sm appearance-none"
+                                                <CircularTimePicker
                                                     value={formData.time}
-                                                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                                                >
-                                                    <option value="" disabled>Pilih Waktu</option>
-                                                    {timeSlots.map(slot => {
-                                                        const booked = isSlotBooked(slot);
-                                                        return (
-                                                            <option
-                                                                key={slot}
-                                                                value={slot}
-                                                                disabled={booked}
-                                                                className={booked ? 'text-white/20' : ''}
-                                                            >
-                                                                {slot} {booked ? '(Penuh)' : ''}
-                                                            </option>
-                                                        );
-                                                    })}
-                                                </select>
+                                                    onChange={(time) => setFormData({ ...formData, time })}
+                                                    bookedSlots={bookedSlots}
+                                                    interval={10}
+                                                />
                                             </div>
                                         </div>
 
@@ -332,8 +312,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     className={`
                                                         py-2.5 w-full text-sm font-mono font-bold rounded transition-colors border flex items-center justify-center gap-2
                                                         ${formData.barber && !isNowAvailable() ? 'bg-[#1a1a1a] border-[#1f1f1f] text-[#333] cursor-not-allowed' :
-                                                            (!timeSlots.includes(formData.time) && formData.time !== '') ? 'bg-[#d4af37] text-black border-[#d4af37] shadow-[0_0_15px_rgba(212,175,55,0.3)]' :
-                                                                'bg-[#141414] border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10'}
+                                                            'bg-[#141414] border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10'}
                                                     `}
                                                 >
                                                     <Clock size={16} />
@@ -358,7 +337,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             required
                                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
                                             value={formData.barber}
-                                            onChange={(e) => setFormData({ ...formData, barber: e.target.value, time: '' })}
+                                            onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
                                         >
                                             <option value="" disabled>Pilih Kapster</option>
                                             {barbers.map(b => (
