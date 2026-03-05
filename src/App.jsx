@@ -19,6 +19,7 @@ import AdminBarbers from './components/AdminBarbers';
 import { Routes, Route } from 'react-router-dom';
 
 import AdminPanel from './components/AdminPanel';
+import AdminGallery from './components/AdminGallery';
 import Testimonials from './components/Testimonials';
 import Location from './components/Location';
 import WhatsAppButton from './components/WhatsAppButton';
@@ -105,6 +106,7 @@ function App() {
                         <Route path="/_studio_admin/products" element={<AdminProducts />} />
                         <Route path="/_studio_admin/services" element={<AdminServices />} />
                         <Route path="/_studio_admin/capsters" element={<AdminBarbers />} />
+                        <Route path="/_studio_admin/gallery" element={<AdminGallery />} />
                         <Route path="/_studio_admin/settings" element={<AdminSettings />} />
                     </Routes>
 

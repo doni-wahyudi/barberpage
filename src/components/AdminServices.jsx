@@ -11,6 +11,7 @@ const AdminServices = () => {
     const [authChecking, setAuthChecking] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingService, setEditingService] = useState(null);
+    const [imageFile, setImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
@@ -74,6 +75,7 @@ const AdminServices = () => {
             setEditingService(null);
             setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0' });
         }
+        setImageFile(null);
         setIsModalOpen(true);
     };
 
@@ -81,17 +83,46 @@ const AdminServices = () => {
         setIsModalOpen(false);
         setEditingService(null);
         setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0' });
+        setImageFile(null);
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsSubmitting(true);
 
+        let finalImageUrl = formData.image_url;
+
+        // Upload image if a new file is selected
+        if (imageFile) {
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+            const filePath = `services/${fileName}`;
+
+            try {
+                const { error: uploadError } = await supabase.storage
+                    .from('images')
+                    .upload(filePath, imageFile);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('images')
+                    .getPublicUrl(filePath);
+
+                finalImageUrl = publicUrl;
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                alert('Gagal mengunggah gambar. Pastikan bucket "images" tersedia dan publik.');
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
         const payload = {
             name: formData.name,
             price: parseInt(formData.price, 10),
             description: formData.description || null,
-            image_url: formData.image_url || null,
+            image_url: finalImageUrl || null,
             is_redeemable: formData.is_redeemable,
             points_required: parseInt(formData.points_required, 10) || 0
         };
@@ -299,14 +330,47 @@ const AdminServices = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">URL Gambar (Opsional)</label>
-                                    <input
-                                        type="url"
-                                        placeholder="https://example.com/image.jpg"
-                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white text-sm"
-                                        value={formData.image_url}
-                                        onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                                    />
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Gambar Layanan</label>
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-4">
+                                            {(imageFile || formData.image_url) && (
+                                                <div className="w-16 h-16 rounded overflow-hidden bg-[#111] border border-[#333] shrink-0">
+                                                    <img
+                                                        src={imageFile ? URL.createObjectURL(imageFile) : formData.image_url}
+                                                        alt="Preview"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                            )}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        setImageFile(e.target.files[0]);
+                                                        setFormData({ ...formData, image_url: '' });
+                                                    }
+                                                }}
+                                                className="w-full text-sm text-[#a1a1a1] file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-[#d4af37] file:text-black hover:file:bg-[#b5952f] transition-colors cursor-pointer"
+                                            />
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[#555]">
+                                            <div className="h-px bg-[#333] flex-1"></div>
+                                            <span className="text-[10px] uppercase font-bold tracking-widest">ATAU URL</span>
+                                            <div className="h-px bg-[#333] flex-1"></div>
+                                        </div>
+                                        <input
+                                            type="url"
+                                            placeholder="https://example.com/image.jpg"
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white text-sm"
+                                            value={formData.image_url}
+                                            onChange={(e) => {
+                                                setFormData({ ...formData, image_url: e.target.value });
+                                                setImageFile(null);
+                                            }}
+                                        />
+                                        <p className="text-[10px] text-[#555] mt-1">Biarkan kosong untuk menggunakan ikon bawaan. Upload file akan mengganti URL URL.</p>
+                                    </div>
                                 </div>
 
                                 <div className="border-t border-[#333] pt-4 mt-2">
