@@ -290,7 +290,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     value={formData.time}
                                                     onChange={(time) => setFormData({ ...formData, time })}
                                                     bookedSlots={bookedSlots}
-                                                    interval={10}
+                                                    interval={5}
                                                 />
                                             </div>
                                         </div>
