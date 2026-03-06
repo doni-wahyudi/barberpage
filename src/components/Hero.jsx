@@ -72,11 +72,17 @@ const Hero = ({ onBooking }) => {
                         Tingkatkan Penampilan <br />
                         <span className="gold-gradient italic">Legendaris</span> Anda
                     </h2>
-                    <div className="flex flex-col md:flex-row gap-4 justify-center items-center">
-                        <button onClick={onBooking} className="gold-button">Reservasi Sekarang</button>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center flex-wrap">
+                        <button onClick={onBooking} className="gold-button w-full sm:w-auto">Reservasi Sekarang</button>
+                        <button
+                            onClick={() => document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all w-full sm:w-auto"
+                        >
+                            Cek Jadwal
+                        </button>
                         <button
                             onClick={() => document.getElementById('lookbook')?.scrollIntoView({ behavior: 'smooth' })}
-                            className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all"
+                            className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all w-full sm:w-auto"
                         >
                             Lihat Gaya
                         </button>

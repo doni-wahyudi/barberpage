@@ -340,7 +340,7 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
                     >
                         {/* Tip circle */}
                         <div
-                            className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full border-2 border-[#d4af37] bg-[#d4af37]/20 backdrop-blur-sm"
+                            className="absolute -top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full border-2 border-[#d4af37] bg-[#d4af37]/20 backdrop-blur-sm pointer-events-none"
                             style={{ boxShadow: '0 0 12px rgba(212,175,55,0.5)' }}
                         />
                     </div>
