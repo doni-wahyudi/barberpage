@@ -6,14 +6,28 @@ import { Link } from 'react-router-dom';
 const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+    const lastScrollY = useRef(0);
 
     useEffect(() => {
         const handleScroll = () => {
-            setScrolled(window.scrollY > 50);
+            const currentScrollY = window.scrollY;
+            if (currentScrollY > 50 !== scrolled) {
+                setScrolled(currentScrollY > 50);
+            }
+
+            // Hide navbar on scroll down, show on scroll up (mobile focus)
+            if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+                setIsVisible(false);
+                if (mobileMenuOpen) setMobileMenuOpen(false);
+            } else {
+                setIsVisible(true);
+            }
+            lastScrollY.current = currentScrollY;
         };
-        window.addEventListener('scroll', handleScroll);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [scrolled, mobileMenuOpen]);
 
     const navLinks = [
         { name: 'Beranda', href: '#home' },
@@ -25,8 +39,8 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-md py-4 border-b border-[#d4af37]/20' : 'bg-transparent py-6'
-                }`}
+            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-md py-4 border-b border-[#d4af37]/20' : 'bg-transparent py-6'
+                } ${!isVisible ? '-translate-y-full opacity-0 md:translate-y-0 md:opacity-100' : 'translate-y-0 opacity-100'}`}
         >
             <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
                 <motion.div

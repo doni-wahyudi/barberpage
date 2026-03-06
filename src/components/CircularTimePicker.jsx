@@ -370,7 +370,6 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
                                             type="button"
                                             disabled={isBooked}
                                             onClick={(e) => { e.stopPropagation(); handleHourSelect(h); }}
-                                            onPointerDown={(e) => e.stopPropagation()}
                                             className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-xs sm:text-sm transition-all focus:outline-none
                                                 ${isBooked ? 'text-[#333] cursor-not-allowed' :
                                                     isSelected ? 'bg-[#d4af37] text-black font-bold shadow-[0_0_10px_rgba(212,175,55,0.5)] z-20 scale-110' :
@@ -410,7 +409,6 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
                                             type="button"
                                             disabled={isBooked}
                                             onClick={(e) => { e.stopPropagation(); handleMinuteSelect(m); }}
-                                            onPointerDown={(e) => e.stopPropagation()}
                                             className={`absolute rounded-full flex items-center justify-center transition-all focus:outline-none
                                                 ${isMajor ? 'w-10 h-10 text-sm font-semibold' : isMedium ? 'w-8 h-8 text-xs' : 'w-6 h-6 text-[10px]'}
                                                 ${isBooked ? 'text-[#333] cursor-not-allowed' :

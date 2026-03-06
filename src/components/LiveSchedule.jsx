@@ -59,7 +59,10 @@ const LiveSchedule = ({ onSelectSlot }) => {
         maxLimit.setHours(0, 0, 0, 0);
 
         if (d >= minDate && d <= maxLimit) {
-            setSelectedDate(d.toISOString().split('T')[0]);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            setSelectedDate(`${year}-${month}-${day}`);
         }
     };
 
@@ -171,7 +174,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                     setSelectedDate(d.toISOString().split('T')[0]);
                                 }}
                                 className={`px-4 py-2 rounded transition-colors ${selectedDate === new Date(new Date().setDate(new Date().getDate() + 1 + (new Date(new Date().setDate(new Date().getDate() + 1)).getDay() === 6 ? 1 : 0))).toISOString().split('T')[0]
-                                        ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'
+                                    ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'
                                     }`}
                             >
                                 Besok
