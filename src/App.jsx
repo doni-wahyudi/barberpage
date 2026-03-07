@@ -10,6 +10,7 @@ import LoadingScreen from './components/LoadingScreen';
 import QueueMonitor from './components/QueueMonitor';
 import MobileBooking from './components/MobileBooking';
 import CheckOrder from './components/CheckOrder';
+import Catalog from './components/Catalog';
 import AdminLogin from './components/AdminLogin';
 import AdminInsights from './components/AdminInsights';
 import AdminProducts from './components/AdminProducts';
@@ -62,6 +63,7 @@ function App() {
                                 <main>
                                     <Hero onBooking={openBooking} />
                                     <Services onSelectService={(service) => openBookingWithData({ service })} />
+                                    <Catalog />
                                     <LiveSchedule onSelectSlot={(data) => openBookingWithData(data)} />
                                     <Lookbook />
                                     <Testimonials />

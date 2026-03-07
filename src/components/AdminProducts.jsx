@@ -19,7 +19,9 @@ const AdminProducts = () => {
         price: '',
         image_url: '',
         is_redeemable: false,
-        points_required: '0'
+        points_required: '0',
+        stock: '0',
+        is_active: true
     });
 
     const fetchProducts = async () => {
@@ -69,11 +71,13 @@ const AdminProducts = () => {
                 price: product.price.toString(),
                 image_url: product.image_url || '',
                 is_redeemable: product.is_redeemable || false,
-                points_required: (product.points_required || 0).toString()
+                points_required: (product.points_required || 0).toString(),
+                stock: (product.stock || 0).toString(),
+                is_active: product.is_active !== false
             });
         } else {
             setEditingProduct(null);
-            setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0' });
+            setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0', stock: '0', is_active: true });
         }
         setImageFile(null);
         setIsModalOpen(true);
@@ -82,7 +86,7 @@ const AdminProducts = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingProduct(null);
-        setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0' });
+        setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0', stock: '0', is_active: true });
         setImageFile(null);
     };
 
@@ -123,7 +127,9 @@ const AdminProducts = () => {
             price: parseFloat(formData.price),
             image_url: finalImageUrl || null,
             is_redeemable: formData.is_redeemable,
-            points_required: parseInt(formData.points_required, 10) || 0
+            points_required: parseInt(formData.points_required, 10) || 0,
+            stock: parseInt(formData.stock, 10) || 0,
+            is_active: formData.is_active
         };
 
         try {
@@ -318,6 +324,10 @@ const AdminProducts = () => {
                                     <div className="p-5 flex-1 flex flex-col pt-6">
                                         <h3 className="font-bold text-lg mb-1 line-clamp-2">{product.name}</h3>
                                         <p className="text-[#d4af37] font-mono font-bold mb-4">{formatPrice(product.price)}</p>
+                                        <div className="flex justify-between items-center text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-4">
+                                            <span>Stok: <span className={product.stock <= 5 ? 'text-red-500 font-bold' : 'text-white'}>{product.stock || 0}</span></span>
+                                            <span className={product.is_active ? 'text-green-500' : 'text-red-500'}>{product.is_active ? 'AKTIF' : 'NON-AKTIF'}</span>
+                                        </div>
 
                                         <div className="mt-auto flex gap-2 pt-4 border-t border-[#333]">
                                             <button
@@ -386,6 +396,31 @@ const AdminProducts = () => {
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                     />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Stok <span className="text-red-500">*</span></label>
+                                        <input
+                                            required
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors font-mono text-white"
+                                            value={formData.stock}
+                                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Status</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
+                                            className={`w-full py-3 rounded border font-bold text-xs uppercase tracking-widest transition-colors ${formData.is_active ? 'bg-green-500/10 border-green-500 text-green-500' : 'bg-red-500/10 border-red-500 text-red-500'}`}
+                                        >
+                                            {formData.is_active ? 'Aktif' : 'Non-Aktif'}
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div>

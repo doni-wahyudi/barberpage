@@ -32,6 +32,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const navLinks = [
         { name: 'Beranda', href: '#home' },
         { name: 'Layanan', href: '#services' },
+        { name: 'Katalog', href: '#catalog' },
         { name: 'Jadwal', href: '#schedule' },
         { name: 'Gaya Berambut', href: '#lookbook' },
         { name: 'Reservasi', href: '#booking' },

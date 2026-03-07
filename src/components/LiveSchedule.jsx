@@ -20,6 +20,10 @@ const formatDateLabel = (dateStr) => {
     return date.toLocaleDateString('id-ID', { weekday: 'long', month: 'long', day: 'numeric' });
 };
 
+const isSaturday = (dateStr) => {
+    return new Date(dateStr + 'T00:00:00').getDay() === 6;
+};
+
 const LiveSchedule = ({ onSelectSlot }) => {
     const [bookings, setBookings] = useState([]);
     const [barbers, setBarbers] = useState([]);
@@ -27,7 +31,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const [lastUpdated, setLastUpdated] = useState(null);
     const getInitialDate = () => {
         const d = new Date();
-        if (d.getDay() === 6) { d.setDate(d.getDate() + 1); }
+        // Removed Saturday auto-skip to allow showing 'Closed' status for today if Saturday
         return d.toISOString().split('T')[0];
     };
 
@@ -45,10 +49,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
         const d = new Date(selectedDate + 'T00:00:00');
         d.setDate(d.getDate() + days);
 
-        // Skip Saturday (6)
-        if (d.getDay() === 6) {
-            d.setDate(d.getDate() + (days > 0 ? 1 : -1));
-        }
+        // Removed Saturday auto-skip
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -229,42 +230,65 @@ const LiveSchedule = ({ onSelectSlot }) => {
                     </div>
                 </div>
 
-                {/* Traffic Summary */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="glass-card p-6 md:p-8 mb-8"
-                >
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
-                        <div className="flex items-center gap-3">
-                            <Users size={20} className="text-[#d4af37]" />
-                            <span className="text-sm font-semibold uppercase tracking-wider">
-                                {isToday ? 'Keramaian Saat Ini' : 'Status Reservasi'}
-                            </span>
+                {isSaturday(selectedDate) ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="glass-card p-12 text-center border-red-500/20 bg-red-500/5 mb-8"
+                    >
+                        <Clock className="mx-auto text-red-500 mb-4 opacity-50" size={48} />
+                        <h3 className="text-2xl font-bold text-red-500 uppercase tracking-widest">Barbershop Tutup</h3>
+                        <p className="text-[#a1a1a1] mt-2">Maaf, kami tutup setiap hari Sabtu. Silakan pilih tanggal lain untuk reservasi.</p>
+
+                        <div className="flex justify-center gap-4 mt-8">
+                            <button
+                                onClick={() => changeDate(1)}
+                                className="gold-button !px-8"
+                            >
+                                Lihat Jadwal Besok
+                            </button>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <span className={`text-xs font-bold uppercase tracking-widest ${traffic.color}`}>
-                                {traffic.text}
-                            </span>
-                            <span className="text-[#a1a1a1] text-xs">
-                                {bookedCount}/{TOTAL_CAPACITY} slot dipesan
-                            </span>
-                        </div>
-                    </div>
-                    <div className="w-full h-2 bg-[#1f1f1f] rounded-full overflow-hidden">
+                    </motion.div>
+                ) : (
+                    <>
+                        {/* Traffic Summary - Only show if not Saturday */}
                         <motion.div
-                            key={selectedDate}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${trafficPercent}%` }}
-                            transition={{ duration: 1, ease: 'easeOut' }}
-                            className={`h-full rounded-full ${traffic.barColor}`}
-                        />
-                    </div>
-                </motion.div>
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            viewport={{ once: true }}
+                            className="glass-card p-6 md:p-8 mb-8"
+                        >
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                                <div className="flex items-center gap-3">
+                                    <Users size={20} className="text-[#d4af37]" />
+                                    <span className="text-sm font-semibold uppercase tracking-wider">
+                                        {isToday ? 'Keramaian Saat Ini' : 'Status Reservasi'}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className={`text-xs font-bold uppercase tracking-widest ${traffic.color}`}>
+                                        {traffic.text}
+                                    </span>
+                                    <span className="text-[#a1a1a1] text-xs">
+                                        {bookedCount}/{TOTAL_CAPACITY} slot dipesan
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="w-full h-2 bg-[#1f1f1f] rounded-full overflow-hidden">
+                                <motion.div
+                                    key={selectedDate}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${trafficPercent}%` }}
+                                    transition={{ duration: 1, ease: 'easeOut' }}
+                                    className={`h-full rounded-full ${traffic.barColor}`}
+                                />
+                            </div>
+                        </motion.div>
+                    </>
+                )}
 
                 {/* Per-Barber Timeline */}
-                <div className="space-y-4">
+                <div className={`space-y-4 ${isSaturday(selectedDate) ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
                     {barbers.map((barber, bIndex) => {
                         const barberBookings = bookings.filter(b => b.barber_name === barber);
                         return (
