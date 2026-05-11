@@ -95,7 +95,7 @@ const Hero = ({ onBooking }) => {
                 style={{ y: y2 }}
                 className="absolute bottom-10 left-10 md:left-20 border-l border-[#d4af37] pl-4 hidden md:block"
             >
-                <p className="text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-2">Sejak 2024</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-2">Sejak 2026</p>
                 <p className="serif italic text-[#d4af37]">Dibuat dengan Presisi</p>
             </motion.div>
 

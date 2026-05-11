@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, User, Phone, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import CircularTimePicker from './CircularTimePicker';
+import VoucherClaim from './VoucherClaim';
 
 const BookingModal = ({ isOpen, onClose, initialData }) => {
     const [loading, setLoading] = useState(false);
@@ -22,7 +23,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         time: ''
     });
     const [services, setServices] = useState([]);
+    const [servicesData, setServicesData] = useState([]);
     const [barbers, setBarbers] = useState([]);
+    const [voucherData, setVoucherData] = useState(null);
 
     const validatePhone = (phone) => {
         const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -94,8 +97,11 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             const { data: bData } = await supabase.from('barbers').select('name').eq('is_active', true);
             if (bData) setBarbers(bData.map(b => b.name));
 
-            const { data: sData } = await supabase.from('services').select('name');
-            if (sData) setServices(sData.map(s => s.name));
+            const { data: sData } = await supabase.from('services').select('name, price');
+            if (sData) {
+                setServices(sData.map(s => s.name));
+                setServicesData(sData);
+            }
         };
         fetchOptions();
     }, [isOpen]);
@@ -147,6 +153,12 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                 return;
             }
 
+            const chosenServiceObj = servicesData.find(s => s.name === formData.service);
+            let basePrice = chosenServiceObj ? chosenServiceObj.price : 0;
+            let discountValue = voucherData ? voucherData.discountValue : 0;
+            let grandTotal = basePrice - discountValue;
+            if (grandTotal < 0) grandTotal = 0;
+
             const { data: newBooking, error } = await supabase
                 .from('bookings')
                 .insert([
@@ -157,12 +169,21 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         barber_name: formData.barber,
                         booking_date: formData.date,
                         booking_time: formData.time,
-                        status: 'pending'
+                        status: 'pending',
+                        total_price: grandTotal,
+                        voucher_discount: voucherData ? voucherData.discountValue : 0,
+                        voucher_program: voucherData ? voucherData.programId : null
                     }
                 ])
                 .select();
 
             if (error) throw error;
+
+            if (voucherData && voucherData.claimId) {
+                await supabase.from('program_claims')
+                    .update({ booking_id: newBooking[0].id })
+                    .eq('id', voucherData.claimId);
+            }
 
             setSuccess(newBooking[0].id);
         } catch (error) {
@@ -206,13 +227,13 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                 <div className="bg-[#141414] p-4 rounded-lg border border-[#d4af37]/20 mb-6">
                                     <p className="text-xs uppercase tracking-widest text-[#d4af37] mb-2">Your Queue Monitor</p>
                                     <p className="text-sm font-mono break-all text-white/80">
-                                        {window.location.origin}/barberpage/queue/{success}
+                                        {window.location.origin}/queue/{success}
                                     </p>
                                 </div>
 
                                 <div className="flex flex-col gap-3">
                                     <button
-                                        onClick={() => window.open(`/barberpage/queue/${success}`, '_blank')}
+                                        onClick={() => window.open(`/queue/${success}`, '_blank')}
                                         className="gold-button w-full"
                                     >
                                         Open Monitor
@@ -222,6 +243,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             setSuccess(false);
                                             onClose();
                                             setFormData({ name: '', phone: '', service: '', barber: '', date: '', time: '' });
+                                            setVoucherData(null);
                                         }}
                                         className="py-3 px-6 bg-transparent border border-[#333] hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded text-white"
                                     >
@@ -344,6 +366,13 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                 <option key={b} value={b}>{b}</option>
                                             ))}
                                         </select>
+                                    </div>
+
+                                    <div className="mt-4 mb-2">
+                                        <VoucherClaim 
+                                            onVoucherApplied={setVoucherData} 
+                                            initialPhone={formData.phone} 
+                                        />
                                     </div>
 
                                     <button

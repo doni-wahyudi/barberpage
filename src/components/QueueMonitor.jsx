@@ -48,11 +48,11 @@ const QueueMonitor = () => {
                 }
 
                 // Fetch App Settings for Points
-                const { data: settingsData } = await supabase.from('app_settings').select('*').eq('id', 1).single();
+                const { data: settingsData } = await supabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
                 if (settingsData) setAppSettings(settingsData);
 
                 // Check if user already reviewed
-                const { data: existingReview } = await supabase.from('reviews').select('*').eq('booking_id', id).single();
+                const { data: existingReview } = await supabase.from('reviews').select('*').eq('booking_id', id).maybeSingle();
                 if (existingReview) {
                     setReviewState({ rating: existingReview.rating || 0, comment: existingReview.comment || '', status: 'submitted', googleClicked: existingReview.is_google_clicked });
                 }
@@ -76,20 +76,17 @@ const QueueMonitor = () => {
             )
             .subscribe();
 
-        // Timer for current time and late checking
+        // Timer for current time
         const timer = setInterval(() => {
             const now = new Date();
             setCurrentTime(now);
-            if (booking) {
-                checkLateStatus(booking, now);
-            }
         }, 15000); // Check every 15 seconds
 
         return () => {
             supabase.removeChannel(channel);
             clearInterval(timer);
         };
-    }, [id, booking]); // Added booking to dependency array for timer to use latest state
+    }, [id]);
 
     useEffect(() => {
         // Trigger check when booking state updates manually

@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee, Loader2, Search, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CircularTimePicker from './CircularTimePicker';
+import VoucherClaim from './VoucherClaim';
 
 const MobileBooking = () => {
     const navigate = useNavigate();
@@ -21,6 +22,7 @@ const MobileBooking = () => {
     const [userPoints, setUserPoints] = useState(0);
     const [appSettings, setAppSettings] = useState(null);
     const [usePoints, setUsePoints] = useState(false);
+    const [voucherData, setVoucherData] = useState(null);
 
     const [formData, setFormData] = useState({
         type: 'service', // 'service' or 'product' (for future)
@@ -202,10 +204,14 @@ const MobileBooking = () => {
             });
 
             if (bestRedeemableItem) {
-                discountValue = bestRedeemableItem.price;
+                discountValue += bestRedeemableItem.price;
                 pointsToDeduct = bestRedeemableItem.points_required;
                 redeemedItemName = bestRedeemableItem.name;
             }
+        }
+
+        if (voucherData) {
+            discountValue += voucherData.discountValue;
         }
 
         let grandTotal = (basePrice + addonPrice) - discountValue;
@@ -244,11 +250,19 @@ const MobileBooking = () => {
                         booking_date: formData.date,
                         booking_time: formData.time,
                         status: 'pending',
-                        total_price: grandTotal
+                        total_price: grandTotal,
+                        voucher_discount: voucherData ? voucherData.discountValue : 0,
+                        voucher_program: voucherData ? voucherData.programId : null
                     }])
                     .select();
 
                 if (error) throw error;
+
+                if (voucherData && voucherData.claimId) {
+                    await supabase.from('program_claims')
+                        .update({ booking_id: newBooking[0].id })
+                        .eq('id', voucherData.claimId);
+                }
 
                 // Save user info for future bookings
                 localStorage.setItem('auro_name', formData.name);
@@ -621,6 +635,13 @@ const MobileBooking = () => {
                             </label>
                         </div>
                     )}
+
+                    <div className="mt-4 mb-2">
+                        <VoucherClaim 
+                            onVoucherApplied={setVoucherData} 
+                            initialPhone={formData.phone} 
+                        />
+                    </div>
 
                     <div className="text-xs text-[#a1a1a1] text-center my-4">
                         Nomor HP Anda berfungsi sebagai ID tiket.
