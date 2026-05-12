@@ -7,7 +7,20 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
     const lastScrollY = useRef(0);
+
+    useEffect(() => {
+        const checkOpenStatus = () => {
+            const now = new Date();
+            const hours = now.getHours();
+            // Store Open 10 AM - 9 PM
+            setIsOpen(hours >= 10 && hours < 21);
+        };
+        checkOpenStatus();
+        const interval = setInterval(checkOpenStatus, 60000); // check every minute
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -32,7 +45,6 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const navLinks = [
         { name: 'Beranda', href: '#home' },
         { name: 'Layanan', href: '#services' },
-        { name: 'Katalog', href: '#catalog' },
         { name: 'Jadwal', href: '#schedule' },
         { name: 'Gaya Berambut', href: '#lookbook' },
         { name: 'Reservasi', href: '#booking' },
@@ -47,10 +59,21 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                 <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-2 cursor-pointer"
+                    className="flex items-center gap-4 cursor-pointer"
                     onClick={() => isAdminView && onAdminToggle()}
                 >
-                    <img src={`${import.meta.env.BASE_URL}auro_logo.png`} alt="Auro Logo" className="h-14 md:h-20 py-1 object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.webp`} alt="Auro Logo" className="h-14 md:h-20 py-1 object-contain" />
+                    {!isAdminView && (
+                        <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                                <span className={`w-2 h-2 rounded-full ${isOpen ? 'bg-green-500 shadow-[0_0_10px_#22c55e]' : 'bg-red-500'} animate-pulse`} />
+                                <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isOpen ? 'text-green-400' : 'text-red-400'}`}>
+                                    {isOpen ? 'Open Now' : 'Closed'}
+                                </span>
+                            </div>
+                            <span className="text-[8px] text-[#555] uppercase tracking-widest mt-0.5">10 AM - 09 PM</span>
+                        </div>
+                    )}
                 </motion.div>
 
                 {/* Desktop Menu */}

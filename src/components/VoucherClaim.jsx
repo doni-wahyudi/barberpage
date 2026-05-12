@@ -63,27 +63,38 @@ const VoucherClaim = ({ onVoucherApplied, initialPhone = '' }) => {
             });
 
             if (error) {
-                // Try parsing edge function custom error format
-                let errMsg = 'Gagal mengirim OTP. Periksa data Anda.';
-                try {
-                    const parsed = JSON.parse(error.message);
-                    if (parsed.error) errMsg = parsed.error;
-                } catch(e) {
-                     // Fallback if not JSON or different format
-                     if (error.message) errMsg = error.message;
-                     if (error.context?.json?.error) errMsg = error.context.json.error;
+                console.error('OTP Error:', error);
+                let message = 'Gagal mengirim OTP. Pastikan data benar.';
+                
+                // Handle specific 409 Conflict error from Supabase Edge Function
+                if (error.context && error.context.status === 409) {
+                    message = 'Voucher ini sudah pernah diklaim untuk NPM tersebut.';
+                } else if (error.message) {
+                    // Try to parse JSON error if it's a stringified JSON from edge function
+                    try {
+                        const parsed = JSON.parse(error.message);
+                        if (parsed.error) message = parsed.error;
+                    } catch(e) {
+                        message = error.message;
+                    }
                 }
-                throw new Error(errMsg);
+                
+                setError(message);
+                setLoading(false);
+                return;
             }
 
-            if (data.error) throw new Error(data.error);
+            if (data && data.error) {
+                setError(data.error);
+                setLoading(false);
+                return;
+            }
 
             setMaskedEmail(data.maskedEmail);
             setExpiryMinutes(data.expiryMinutes || 10);
             setStage(3);
         } catch (err) {
             setError(err.message || 'Terjadi kesalahan sistem.');
-        } finally {
             setLoading(false);
         }
     };
@@ -124,17 +135,30 @@ const VoucherClaim = ({ onVoucherApplied, initialPhone = '' }) => {
             });
 
             if (error) {
-                let errMsg = 'Kode OTP tidak valid.';
-                try {
-                    const parsed = JSON.parse(error.message);
-                    if (parsed.error) errMsg = parsed.error;
-                } catch(e) {
-                     if (error.message) errMsg = error.message;
-                     if (error.context?.json?.error) errMsg = error.context.json.error;
+                console.error('Verify Error:', error);
+                let message = 'Gagal memverifikasi OTP.';
+                
+                if (error.context && error.context.status === 409) {
+                    message = 'Maaf, voucher ini baru saja diklaim.';
+                } else if (error.message) {
+                    try {
+                        const parsed = JSON.parse(error.message);
+                        if (parsed.error) message = parsed.error;
+                    } catch(e) {
+                        message = error.message;
+                    }
                 }
-                throw new Error(errMsg);
+                
+                setError(message);
+                setLoading(false);
+                return;
             }
-            if (data.error) throw new Error(data.error);
+
+            if (data && data.error) {
+                setError(data.error);
+                setLoading(false);
+                return;
+            }
 
             setSuccessData(data);
             setStage(4);

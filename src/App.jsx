@@ -23,6 +23,7 @@ import AdminPanel from './components/AdminPanel';
 import AdminGallery from './components/AdminGallery';
 import Testimonials from './components/Testimonials';
 import Location from './components/Location';
+import Team from './components/Team';
 import WhatsAppButton from './components/WhatsAppButton';
 
 function App() {
@@ -63,9 +64,9 @@ function App() {
                                 <main>
                                     <Hero onBooking={openBooking} />
                                     <Services onSelectService={(service) => openBookingWithData({ service })} />
-                                    <Catalog />
                                     <LiveSchedule onSelectSlot={(data) => openBookingWithData(data)} />
                                     <Lookbook />
+                                    <Team />
                                     <Testimonials />
                                     <Location />
 

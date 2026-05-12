@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar } from 'lucide-react';
+import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 const AdminInsights = () => {
     const navigate = useNavigate();
@@ -10,68 +11,67 @@ const AdminInsights = () => {
     const [filteredCustomers, setFilteredCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [stats, setStats] = useState({ revenueData: [], serviceData: [], barberData: [] });
 
     useEffect(() => {
         const fetchInsights = async () => {
             setLoading(true);
             try {
-                // Fetch all non-cancelled bookings
-                const { data: bookings, error } = await supabase
+                // 1. Fetch all unique customers
+                const { data: customerData, error: custError } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .order('total_visits', { ascending: false });
+
+                if (custError) throw custError;
+                setCustomers(customerData || []);
+                setFilteredCustomers(customerData || []);
+
+                // 2. Fetch recent bookings for visual analytics (last 30 days)
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+                const { data: bookingData, error: bookError } = await supabase
                     .from('bookings')
                     .select('*')
-                    .neq('status', 'cancelled')
-                    .order('booking_date', { ascending: false });
+                    .eq('status', 'completed')
+                    .gte('booking_date', thirtyDaysAgo.toISOString().split('T')[0]);
 
-                if (error) throw error;
+                if (bookError) throw bookError;
 
-                // Group by phone_number to figure out unique customers
-                const customerMap = {};
+                // Process data for charts
+                const revenueMap = {};
+                const serviceMap = {};
+                const barberMap = {};
 
-                (bookings || []).forEach(b => {
-                    const phone = b.phone_number;
-                    if (!customerMap[phone]) {
-                        customerMap[phone] = {
-                            phone_number: phone,
-                            name: b.customer_name, // mostly the most recent name they used
-                            total_visits: 0,
-                            last_visit: b.booking_date,
-                            barbers_used: {},
-                            services_used: {}
-                        };
-                    }
+                (bookingData || []).forEach(b => {
+                    // Revenue by Day
+                    const date = b.booking_date;
+                    revenueMap[date] = (revenueMap[date] || 0) + (b.total_price || 0);
 
-                    const c = customerMap[phone];
-                    c.total_visits += 1;
+                    // Service Popularity
+                    serviceMap[b.service_type] = (serviceMap[b.service_type] || 0) + 1;
 
-                    // Track favorite barber
-                    c.barbers_used[b.barber_name] = (c.barbers_used[b.barber_name] || 0) + 1;
-
-                    // Track favorite service
-                    c.services_used[b.service_type] = (c.services_used[b.service_type] || 0) + 1;
-
-                    // Update last visit if more recent
-                    if (b.booking_date > c.last_visit) {
-                        c.last_visit = b.booking_date;
-                        c.name = b.customer_name; // Update to the most recently used name
-                    }
+                    // Barber Performance
+                    barberMap[b.barber_name] = (barberMap[b.barber_name] || 0) + 1;
                 });
 
-                // Convert map to array and sort by visits (highest first), then last visit
-                let customerArray = Object.values(customerMap);
+                const revenueData = Object.keys(revenueMap).sort().map(date => ({
+                    date: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+                    revenue: revenueMap[date]
+                }));
 
-                // Helper to get highest key in a frequency map
-                customerArray.forEach(c => {
-                    c.favorite_barber = Object.keys(c.barbers_used).reduce((a, b) => c.barbers_used[a] > c.barbers_used[b] ? a : b);
-                    c.favorite_service = Object.keys(c.services_used).reduce((a, b) => c.services_used[a] > c.services_used[b] ? a : b);
-                });
+                const serviceData = Object.keys(serviceMap).map(name => ({
+                    name,
+                    value: serviceMap[name]
+                }));
 
-                customerArray.sort((a, b) => {
-                    if (b.total_visits !== a.total_visits) return b.total_visits - a.total_visits;
-                    return new Date(b.last_visit) - new Date(a.last_visit);
-                });
+                const barberData = Object.keys(barberMap).map(name => ({
+                    name,
+                    visits: barberMap[name]
+                }));
 
-                setCustomers(customerArray);
-                setFilteredCustomers(customerArray);
+                setStats({ revenueData, serviceData, barberData });
 
             } catch (err) {
                 console.error("Error fetching insights:", err);
@@ -138,11 +138,103 @@ const AdminInsights = () => {
                         <p className="uppercase tracking-widest text-xs">Analyzing Database...</p>
                     </div>
                 ) : (
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="glass-card overflow-hidden"
-                    >
+                    <div className="space-y-8">
+                        {/* Analytics Overview */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Revenue Chart */}
+                            <div className="glass-card p-6 border border-[#d4af37]/10">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-[#d4af37]/10 rounded text-[#d4af37]">
+                                        <TrendingUp size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold">Revenue 30 Hari Terakhir</h3>
+                                        <p className="text-[10px] text-[#a1a1a1] uppercase tracking-widest">Pertumbuhan Pendapatan</p>
+                                    </div>
+                                </div>
+                                <div className="h-64 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={stats.revenueData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#333" vertical={false} />
+                                            <XAxis dataKey="date" stroke="#555" fontSize={10} tickLine={false} axisLine={false} />
+                                            <YAxis hide />
+                                            <Tooltip 
+                                                contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
+                                                itemStyle={{ color: '#d4af37' }}
+                                                formatter={(value) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value)}
+                                            />
+                                            <Line type="monotone" dataKey="revenue" stroke="#d4af37" strokeWidth={3} dot={{ r: 4, fill: '#d4af37' }} activeDot={{ r: 6 }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                {/* Service Pie Chart */}
+                                <div className="glass-card p-6 border border-[#d4af37]/10">
+                                    <h3 className="font-bold mb-4 text-center">Populeritas Layanan</h3>
+                                    <div className="h-48 w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <PieChart>
+                                                <Pie
+                                                    data={stats.serviceData}
+                                                    cx="50%"
+                                                    cy="50%"
+                                                    innerRadius={40}
+                                                    outerRadius={60}
+                                                    paddingAngle={5}
+                                                    dataKey="value"
+                                                >
+                                                    {stats.serviceData.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={[ '#d4af37', '#8b7326', '#b5952f', '#4d4015' ][index % 4]} />
+                                                    ))}
+                                                </Pie>
+                                                <Tooltip />
+                                            </PieChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="mt-4 flex flex-wrap justify-center gap-4">
+                                        {stats.serviceData.map((s, i) => (
+                                            <div key={i} className="flex items-center gap-2 text-[10px] uppercase font-bold text-[#a1a1a1]">
+                                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: [ '#d4af37', '#8b7326', '#b5952f', '#4d4015' ][i % 4] }} />
+                                                {s.name}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Barber Performance */}
+                                <div className="glass-card p-6 border border-[#d4af37]/10">
+                                    <h3 className="font-bold mb-4 text-center">Performa Kapster</h3>
+                                    <div className="h-48 w-full">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={stats.barberData}>
+                                                <XAxis dataKey="name" hide />
+                                                <Tooltip 
+                                                    contentStyle={{ backgroundColor: '#111', border: '1px solid #333', borderRadius: '8px' }}
+                                                />
+                                                <Bar dataKey="visits" fill="#d4af37" radius={[4, 4, 0, 0]} />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    </div>
+                                    <div className="mt-4 space-y-2">
+                                        {stats.barberData.map((b, i) => (
+                                            <div key={i} className="flex justify-between items-center text-[10px] uppercase font-bold">
+                                                <span className="text-[#a1a1a1]">{b.name}</span>
+                                                <span className="text-[#d4af37]">{b.visits} Kunjungan</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Customer List */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="glass-card overflow-hidden"
+                        >
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -170,6 +262,9 @@ const AdminInsights = () => {
                                                         )}
                                                     </div>
                                                     <div className="text-xs text-[#a1a1a1] font-mono">{client.phone_number}</div>
+                                                    <div className="mt-2 text-[10px] font-bold text-[#d4af37] bg-[#d4af37]/5 px-2 py-0.5 rounded inline-block border border-[#d4af37]/20 uppercase tracking-widest">
+                                                        {client.points || 0} Pts Reward
+                                                    </div>
                                                 </td>
                                                 <td className="p-5 text-center">
                                                     <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#1a1a1a] border border-[#d4af37]/30 text-[#d4af37] font-bold text-lg">
@@ -205,9 +300,10 @@ const AdminInsights = () => {
                             </table>
                         </div>
                     </motion.div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
+    </div>
     );
 };
 

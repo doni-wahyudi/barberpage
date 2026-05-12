@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import { Scissors, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { convertToWebP } from '../utils/imageOptimizer';
 
 const AdminServices = () => {
     const navigate = useNavigate();
@@ -95,19 +96,21 @@ const AdminServices = () => {
 
         // Upload image if a new file is selected
         if (imageFile) {
-            const fileExt = imageFile.name.split('.').pop();
-            const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-            const filePath = `services/${fileName}`;
-
+            setIsSubmitting(true);
             try {
+                // Convert to WebP before upload
+                const webpFile = await convertToWebP(imageFile);
+                const fileName = `${Math.random().toString(36).substring(2, 15)}.webp`;
+                const filePath = `services/${fileName}`;
+
                 const { error: uploadError } = await supabase.storage
-                    .from('images')
-                    .upload(filePath, imageFile);
+                    .from('services')
+                    .upload(filePath, webpFile);
 
                 if (uploadError) throw uploadError;
 
                 const { data: { publicUrl } } = supabase.storage
-                    .from('images')
+                    .from('services')
                     .getPublicUrl(filePath);
 
                 finalImageUrl = publicUrl;

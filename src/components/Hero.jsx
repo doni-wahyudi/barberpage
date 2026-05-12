@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
-import heroBg from '../assets/hero-bg.png';
+import heroBg from '../assets/hero-bg.webp';
 import heroVideo from '../assets/hero-video.mp4';
 
 const Hero = ({ onBooking }) => {

@@ -108,36 +108,47 @@ const AdminPanel = () => {
             return;
         }
 
-        // --- Loyalty Points Logic on Completion ---
-        if (updates.status === 'completed' && booking.status !== 'completed' && booking.total_price > 0 && booking.phone_number) {
+        // --- Loyalty & CRM Sync Logic on Completion ---
+        if (updates.status === 'completed' && booking.status !== 'completed' && booking.phone_number) {
             try {
                 // 1. Get Settings for exact point ratio
                 const { data: settings } = await supabase.from('app_settings').select('points_per_1000_spent').eq('id', 1).single();
                 const pointsRatio = settings ? settings.points_per_1000_spent : 1;
 
                 // 2. Calculate points earned
-                const pointsEarned = Math.floor(booking.total_price / 1000) * pointsRatio;
+                const pointsEarned = Math.floor((booking.total_price || 0) / 1000) * pointsRatio;
 
+                // 3. Fetch current customer data to increment correctly
+                const { data: customerData } = await supabase
+                    .from('customers')
+                    .select('points, total_visits')
+                    .eq('phone_number', booking.phone_number)
+                    .single();
+
+                const currentPoints = customerData ? customerData.points : 0;
+                const currentVisits = customerData ? customerData.total_visits : 0;
+
+                // 4. Upsert Customer with AGGREGATE data
+                await supabase.from('customers').upsert({
+                    phone_number: booking.phone_number,
+                    name: booking.customer_name,
+                    points: currentPoints + pointsEarned,
+                    total_visits: currentVisits + 1,
+                    last_visit: new Date().toISOString(),
+                    favorite_barber: booking.barber_name,
+                    favorite_service: booking.service_type
+                });
+
+                // 5. Record Point Transaction (only if points earned)
                 if (pointsEarned > 0) {
-                    // 3. Upsert Customer Points
-                    const { data: customerData } = await supabase.from('customers').select('points').eq('phone_number', booking.phone_number).single();
-                    const currentPoints = customerData ? customerData.points : 0;
-
-                    await supabase.from('customers').upsert({
-                        phone_number: booking.phone_number,
-                        name: booking.customer_name,
-                        points: currentPoints + pointsEarned
-                    });
-
-                    // 4. Record Transaction
                     await supabase.from('point_transactions').insert([{
                         phone_number: booking.phone_number,
                         amount: pointsEarned,
-                        description: `Earned points from transaction(${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(booking.total_price)})`
+                        description: `Points from booking #${booking.id.split('-')[0]} (${booking.service_type})`
                     }]);
                 }
             } catch (err) {
-                console.error("Failed to award points:", err);
+                console.error("Failed to sync CRM data:", err);
             }
         }
 
@@ -159,8 +170,33 @@ const AdminPanel = () => {
             case 'late': return 'text-red-500';
             case 'late_arrived': return 'text-orange-400';
             case 'skipped': return 'text-red-400';
+            case 'completed': return 'text-[#d4af37]';
             default: return 'text-yellow-400';
         }
+    };
+
+    const handleWhatsApp = (booking, type) => {
+        // Ensure phone starts with 62 (Indonesia) and remove leading 0
+        let phone = booking.phone_number.replace(/\D/g, ''); // remove non-digits
+        if (phone.startsWith('0')) {
+            phone = '62' + phone.substring(1);
+        } else if (!phone.startsWith('62')) {
+            phone = '62' + phone;
+        }
+
+        const name = booking.customer_name;
+        const time = (booking.booking_time || "").substring(0, 5);
+        const service = booking.service_type;
+
+        let message = "";
+        if (type === 'remind') {
+            message = `Halo ${name}, pengingat dari Auro Barbershop. Jadwal reservasi Anda adalah hari ini pukul ${time} untuk layanan ${service}. Kami tunggu kedatangannya ya! 🙏✂️`;
+        } else if (type === 'followup') {
+            message = `Halo ${name}, terima kasih sudah mampir ke Auro Barbershop hari ini! Gimana hasilnya? Kalau suka, bantu kami dengan rating di sini ya: https://maps.app.goo.gl/aurobarber. Sampai jumpa lagi! 🤩💈`;
+        }
+
+        const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
     };
 
     if (authChecking) {
@@ -329,6 +365,14 @@ const AdminPanel = () => {
                                                             LEWATI
                                                         </button>
                                                     )}
+                                                    <button
+                                                        onClick={() => handleWhatsApp(booking, booking.status === 'completed' ? 'followup' : 'remind')}
+                                                        className={`p-1 glass-card hover:bg-green-500/20 text-green-400 transition-colors flex items-center gap-1 px-2`}
+                                                        title={booking.status === 'completed' ? 'Kirim Follow-up (WA)' : 'Kirim Pengingat (WA)'}
+                                                    >
+                                                        <Star size={14} className={booking.status === 'completed' ? 'fill-green-400' : ''} />
+                                                        <span className="text-[9px] font-bold">WA</span>
+                                                    </button>
                                                     <button
                                                         onClick={() => updateStatus(booking, { status: 'confirmed' })}
                                                         className="p-1 glass-card hover:bg-blue-500/20 text-blue-400 transition-colors"
