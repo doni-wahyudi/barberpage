@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Package, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight, Tag, Barcode } from 'lucide-react';
 import { convertToWebP } from '../utils/imageOptimizer';
 
 const AdminProducts = () => {
@@ -14,6 +14,7 @@ const AdminProducts = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [imageFile, setImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [categories, setCategories] = useState([]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -22,7 +23,11 @@ const AdminProducts = () => {
         is_redeemable: false,
         points_required: '0',
         stock: '0',
-        is_active: true
+        is_active: true,
+        category_id: '',
+        sku: '',
+        barcode: '',
+        cost: '0'
     });
 
     const fetchProducts = async () => {
@@ -30,12 +35,21 @@ const AdminProducts = () => {
         try {
             const { data, error } = await supabase
                 .from('products')
-                .select('*')
+                .select('*, categories(name)')
                 .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
             setProducts(data || []);
+
+            // Also fetch categories for the dropdown
+            const { data: cats, error: catsError } = await supabase
+                .from('categories')
+                .select('*')
+                .order('name', { ascending: true });
+            
+            if (catsError) throw catsError;
+            setCategories(cats || []);
         } catch (error) {
             console.error('Error fetching products:', error);
         } finally {
@@ -74,11 +88,27 @@ const AdminProducts = () => {
                 is_redeemable: product.is_redeemable || false,
                 points_required: (product.points_required || 0).toString(),
                 stock: (product.stock || 0).toString(),
-                is_active: product.is_active !== false
+                is_active: product.is_active !== false,
+                category_id: product.category_id || '',
+                sku: product.sku || '',
+                barcode: product.barcode || '',
+                cost: (product.cost || 0).toString()
             });
         } else {
             setEditingProduct(null);
-            setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0', stock: '0', is_active: true });
+            setFormData({ 
+                name: '', 
+                price: '', 
+                image_url: '', 
+                is_redeemable: false, 
+                points_required: '0', 
+                stock: '0', 
+                is_active: true,
+                category_id: '',
+                sku: '',
+                barcode: '',
+                cost: '0'
+            });
         }
         setImageFile(null);
         setIsModalOpen(true);
@@ -87,7 +117,19 @@ const AdminProducts = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingProduct(null);
-        setFormData({ name: '', price: '', image_url: '', is_redeemable: false, points_required: '0', stock: '0', is_active: true });
+        setFormData({ 
+            name: '', 
+            price: '', 
+            image_url: '', 
+            is_redeemable: false, 
+            points_required: '0', 
+            stock: '0', 
+            is_active: true,
+            category_id: '',
+            sku: '',
+            barcode: '',
+            cost: '0'
+        });
         setImageFile(null);
     };
 
@@ -132,7 +174,12 @@ const AdminProducts = () => {
             is_redeemable: formData.is_redeemable,
             points_required: parseInt(formData.points_required, 10) || 0,
             stock: parseInt(formData.stock, 10) || 0,
-            is_active: formData.is_active
+            is_active: formData.is_active,
+            category_id: formData.category_id || null,
+            sku: formData.sku || null,
+            barcode: formData.barcode || null,
+            cost: parseFloat(formData.cost) || 0,
+            updated_at: new Date().toISOString()
         };
 
         try {
@@ -325,8 +372,18 @@ const AdminProducts = () => {
                                         )}
                                     </div>
                                     <div className="p-5 flex-1 flex flex-col pt-6">
-                                        <h3 className="font-bold text-lg mb-1 line-clamp-2">{product.name}</h3>
-                                        <p className="text-[#d4af37] font-mono font-bold mb-4">{formatPrice(product.price)}</p>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h3 className="font-bold text-lg line-clamp-2">{product.name}</h3>
+                                            {product.categories?.name && (
+                                                <span className="text-[10px] bg-[#d4af37]/10 text-[#d4af37] px-2 py-0.5 rounded font-bold uppercase tracking-widest whitespace-nowrap">
+                                                    {product.categories.name}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="flex justify-between items-center mb-4">
+                                            <p className="text-[#d4af37] font-mono font-bold">{formatPrice(product.price)}</p>
+                                            {product.sku && <span className="text-[9px] text-[#555] font-mono">{product.sku}</span>}
+                                        </div>
                                         <div className="flex justify-between items-center text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-4">
                                             <span>Stok: <span className={product.stock <= 5 ? 'text-red-500 font-bold' : 'text-white'}>{product.stock || 0}</span></span>
                                             <span className={product.is_active ? 'text-green-500' : 'text-red-500'}>{product.is_active ? 'AKTIF' : 'NON-AKTIF'}</span>
@@ -402,6 +459,45 @@ const AdminProducts = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Kategori</label>
+                                        <div className="relative">
+                                            <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" size={16} />
+                                            <select
+                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white appearance-none"
+                                                value={formData.category_id}
+                                                onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                                            >
+                                                <option value="">Tanpa Kategori</option>
+                                                {categories.map(cat => (
+                                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">SKU</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Cth: PRD-001"
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white font-mono text-sm"
+                                            value={formData.sku}
+                                            onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Barcode</label>
+                                        <div className="relative">
+                                            <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" size={16} />
+                                            <input
+                                                type="text"
+                                                placeholder="Scan Barcode"
+                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white font-mono text-sm"
+                                                value={formData.barcode}
+                                                onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
                                     <div>
                                         <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Stok <span className="text-red-500">*</span></label>
                                         <input
@@ -409,12 +505,23 @@ const AdminProducts = () => {
                                             type="number"
                                             min="0"
                                             placeholder="0"
-                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors font-mono text-white"
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors font-mono text-white"
                                             value={formData.stock}
                                             onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
                                         />
                                     </div>
                                     <div>
+                                        <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Harga Modal</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors font-mono text-white"
+                                            value={formData.cost}
+                                            onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="col-span-2">
                                         <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Status</label>
                                         <button
                                             type="button"

@@ -68,7 +68,7 @@ const Hero = ({ onBooking }) => {
                     <p className="uppercase tracking-[0.5em] text-[#d4af37] text-sm mb-4">
                         Rapih Tanpa Ribet
                     </p>
-                    <h2 className="serif text-5xl md:text-8xl font-bold mb-8 leading-tight">
+                    <h2 className="serif text-4xl md:text-8xl font-bold mb-8 leading-tight">
                         Tingkatkan Penampilan <br />
                         <span className="gold-gradient italic">Legendaris</span> Anda
                     </h2>

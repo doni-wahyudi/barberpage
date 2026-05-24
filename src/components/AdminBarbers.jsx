@@ -352,7 +352,7 @@ const AdminBarbers = () => {
                                                 required
                                                 type="text"
                                                 placeholder="Cth: Budi"
-                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             />
@@ -363,7 +363,7 @@ const AdminBarbers = () => {
                                             <input
                                                 type="text"
                                                 placeholder="Cth: Fade Expert"
-                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white"
                                                 value={formData.specialty}
                                                 onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
                                             />
@@ -411,7 +411,7 @@ const AdminBarbers = () => {
                                     <textarea
                                         rows="3"
                                         placeholder="Tuliskan sedikit tentang kapster ini..."
-                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white resize-none text-sm italic"
+                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white resize-none text-sm italic"
                                         value={formData.bio}
                                         onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                                     />

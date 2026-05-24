@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useNavigate } from 'react-router-dom';
-import { Scissors, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Scissors, Plus, Trash2, Edit2, ArrowLeft, Loader2, Image as ImageIcon, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { convertToWebP } from '../utils/imageOptimizer';
 
 const AdminServices = () => {
@@ -14,6 +14,7 @@ const AdminServices = () => {
     const [editingService, setEditingService] = useState(null);
     const [imageFile, setImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [categories, setCategories] = useState([]);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -21,7 +22,8 @@ const AdminServices = () => {
         description: '',
         image_url: '',
         is_redeemable: false,
-        points_required: '0'
+        points_required: '0',
+        category_id: ''
     });
 
     const fetchServices = async () => {
@@ -29,12 +31,21 @@ const AdminServices = () => {
         try {
             const { data, error } = await supabase
                 .from('services')
-                .select('*')
+                .select('*, categories(name)')
                 .order('sort_order', { ascending: true })
                 .order('created_at', { ascending: true });
 
             if (error) throw error;
             setServices(data || []);
+
+            // Fetch categories
+            const { data: cats, error: catsError } = await supabase
+                .from('categories')
+                .select('*')
+                .order('name', { ascending: true });
+            
+            if (catsError) throw catsError;
+            setCategories(cats || []);
         } catch (error) {
             console.error('Error fetching services:', error);
         } finally {
@@ -71,11 +82,12 @@ const AdminServices = () => {
                 description: service.description || '',
                 image_url: service.image_url || '',
                 is_redeemable: service.is_redeemable || false,
-                points_required: (service.points_required || 0).toString()
+                points_required: (service.points_required || 0).toString(),
+                category_id: service.category_id || ''
             });
         } else {
             setEditingService(null);
-            setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0' });
+            setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0', category_id: '' });
         }
         setImageFile(null);
         setIsModalOpen(true);
@@ -128,7 +140,9 @@ const AdminServices = () => {
             description: formData.description || null,
             image_url: finalImageUrl || null,
             is_redeemable: formData.is_redeemable,
-            points_required: parseInt(formData.points_required, 10) || 0
+            points_required: parseInt(formData.points_required, 10) || 0,
+            category_id: formData.category_id || null,
+            updated_at: new Date().toISOString()
         };
 
         try {
@@ -321,7 +335,14 @@ const AdminServices = () => {
                                         )}
                                     </div>
                                     <div className="p-5 flex-1 flex flex-col pt-6">
-                                        <h3 className="font-bold text-lg mb-1">{service.name}</h3>
+                                        <div className="flex justify-between items-start mb-1">
+                                            <h3 className="font-bold text-lg line-clamp-2">{service.name}</h3>
+                                            {service.categories?.name && (
+                                                <span className="text-[10px] bg-[#d4af37]/10 text-[#d4af37] px-2 py-0.5 rounded font-bold uppercase tracking-widest whitespace-nowrap">
+                                                    {service.categories.name}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p className="text-[#d4af37] font-mono font-bold">{formatPrice(service.price)}</p>
                                         <p className="text-sm text-[#a1a1a1] mt-3 line-clamp-3 leading-relaxed">{service.description}</p>
 
@@ -375,10 +396,27 @@ const AdminServices = () => {
                                         required
                                         type="text"
                                         placeholder="Cth: Cukur Premium"
-                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white"
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2">Kategori</label>
+                                    <div className="relative">
+                                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 text-[#555]" size={16} />
+                                        <select
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white appearance-none"
+                                            value={formData.category_id}
+                                            onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+                                        >
+                                            <option value="">Tanpa Kategori</option>
+                                            {categories.map(cat => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
 
                                 <div>
@@ -388,7 +426,7 @@ const AdminServices = () => {
                                         type="number"
                                         min="0"
                                         placeholder="e.g. 25000"
-                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider text-white"
+                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors font-mono tracking-wider text-white"
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                     />
@@ -399,7 +437,7 @@ const AdminServices = () => {
                                     <textarea
                                         rows="3"
                                         placeholder="Detail layanan..."
-                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white text-sm"
+                                        className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white text-sm"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                     ></textarea>
@@ -438,7 +476,7 @@ const AdminServices = () => {
                                         <input
                                             type="url"
                                             placeholder="https://example.com/image.jpg"
-                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors text-white text-sm"
+                                            className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white text-sm"
                                             value={formData.image_url}
                                             onChange={(e) => {
                                                 setFormData({ ...formData, image_url: e.target.value });

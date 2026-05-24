@@ -11,6 +11,7 @@ import QueueMonitor from './components/QueueMonitor';
 import MobileBooking from './components/MobileBooking';
 import CheckOrder from './components/CheckOrder';
 import Catalog from './components/Catalog';
+import AdminCategories from './components/AdminCategories';
 import AdminLogin from './components/AdminLogin';
 import AdminInsights from './components/AdminInsights';
 import AdminProducts from './components/AdminProducts';
@@ -110,6 +111,7 @@ function App() {
                         <Route path="/_studio_admin/services" element={<AdminServices />} />
                         <Route path="/_studio_admin/capsters" element={<AdminBarbers />} />
                         <Route path="/_studio_admin/gallery" element={<AdminGallery />} />
+                        <Route path="/_studio_admin/categories" element={<AdminCategories />} />
                         <Route path="/_studio_admin/settings" element={<AdminSettings />} />
                     </Routes>
 

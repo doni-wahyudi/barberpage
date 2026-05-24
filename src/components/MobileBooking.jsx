@@ -16,6 +16,8 @@ const MobileBooking = () => {
     const [products, setProducts] = useState([]);
     const [services, setServices] = useState([]);
     const [barbers, setBarbers] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [activeCategory, setActiveCategory] = useState(null);
     const [formError, setFormError] = useState('');
 
     // Loyalty State
@@ -87,14 +89,16 @@ const MobileBooking = () => {
         };
 
         const fetchData = async () => {
-            const [productsRes, servicesRes, barbersRes] = await Promise.all([
+            const [productsRes, servicesRes, barbersRes, catsRes] = await Promise.all([
                 supabase.from('products').select('*').order('sort_order', { ascending: true }),
                 supabase.from('services').select('*').order('sort_order', { ascending: true }),
-                supabase.from('barbers').select('*').eq('is_active', true)
+                supabase.from('barbers').select('*').eq('is_active', true),
+                supabase.from('categories').select('*').order('name', { ascending: true })
             ]);
             if (productsRes.data) setProducts(productsRes.data);
             if (servicesRes.data) setServices(servicesRes.data);
             if (barbersRes.data) setBarbers(barbersRes.data);
+            if (catsRes.data) setCategories(catsRes.data);
         };
 
         const fetchLoyaltySettings = async () => {
@@ -378,7 +382,7 @@ const MobileBooking = () => {
                         required
                         type="date"
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors text-sm text-white"
+                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-sm text-white"
                         style={{ colorScheme: 'dark' }}
                         value={formData.date}
                         onChange={(e) => {
@@ -393,7 +397,7 @@ const MobileBooking = () => {
                 </div>
 
                 <select
-                    className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
+                    className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors appearance-none"
                     value={formData.barber}
                     onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
                 >
@@ -402,7 +406,7 @@ const MobileBooking = () => {
                 </select>
 
                 <select
-                    className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
+                    className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors appearance-none"
                     value={formData.service}
                     onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                 >
@@ -486,40 +490,67 @@ const MobileBooking = () => {
                     : 'Pilih produk premium untuk dibeli dan diambil di toko.'}
             </p>
 
-            <div className="space-y-4">
-                {products.length === 0 ? (
-                    <p className="text-center text-[#555] text-xs uppercase tracking-widest py-4 border border-[#333] rounded border-dashed">Belum ada stok produk tersedia.</p>
-                ) : products.map((product) => {
-                    const isSelected = (formData.addons || []).includes(product.name);
-                    const formattedPrice = new Intl.NumberFormat('id-ID', {
-                        style: 'currency', currency: 'IDR', minimumFractionDigits: 0
-                    }).format(product.price);
-
-                    return (
+            <div className="flex flex-col gap-4">
+                {/* Category Filter */}
+                {categories.length > 0 && (
+                    <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide no-scrollbar">
                         <button
-                            key={product.id}
-                            onClick={() => toggleAddon(product.name)}
-                            className={`w-full p-4 rounded border transition-all flex items-center justify-between group
-                                ${isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-[#141414] border-[#d4af37]/20 text-[#a1a1a1] hover:border-[#d4af37]/50'}
-                            `}
+                            onClick={() => setActiveCategory(null)}
+                            className={`px-4 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest transition-all whitespace-nowrap border ${!activeCategory ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-transparent text-[#a1a1a1] border-[#333] hover:border-[#555]'}`}
                         >
-                            <div className="flex items-center gap-4">
-                                <div className={`w-12 h-12 flex-shrink-0 rounded flex items-center justify-center overflow-hidden ${isSelected ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#1a1a1a] text-[#555] border-[#333] border'}`}>
-                                    {product.image_url ? (
-                                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <Package size={20} />
-                                    )}
-                                </div>
-                                <div className="text-left flex-1 pl-2">
-                                    <h3 className="font-bold text-sm uppercase tracking-widest">{product.name}</h3>
-                                    <p className="text-[10px] text-[#d4af37] font-mono tracking-wider">{formattedPrice}</p>
-                                </div>
-                            </div>
-                            {isSelected && <div className="w-3 h-3 rounded-full bg-[#d4af37] flex-shrink-0"></div>}
+                            Semua
                         </button>
-                    );
-                })}
+                        {categories.map(cat => (
+                            <button
+                                key={cat.id}
+                                onClick={() => setActiveCategory(cat.id)}
+                                className={`px-4 py-2 rounded-full text-[10px] uppercase font-bold tracking-widest transition-all whitespace-nowrap border ${activeCategory === cat.id ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-transparent text-[#a1a1a1] border-[#333] hover:border-[#555]'}`}
+                                style={activeCategory === cat.id ? { backgroundColor: cat.color, borderColor: cat.color } : {}}
+                            >
+                                {cat.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                <div className="space-y-4">
+                    {products.filter(p => !activeCategory || p.category_id === activeCategory).length === 0 ? (
+                        <p className="text-center text-[#555] text-xs uppercase tracking-widest py-8 border border-[#333] rounded border-dashed flex flex-col items-center gap-3">
+                            <Tag size={24} className="opacity-20" />
+                            Belum ada stok produk tersedia.
+                        </p>
+                    ) : products.filter(p => !activeCategory || p.category_id === activeCategory).map((product) => {
+                        const isSelected = (formData.addons || []).includes(product.name);
+                        const formattedPrice = new Intl.NumberFormat('id-ID', {
+                            style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+                        }).format(product.price);
+
+                        return (
+                            <button
+                                key={product.id}
+                                onClick={() => toggleAddon(product.name)}
+                                className={`w-full p-4 rounded border transition-all flex items-center justify-between group
+                                    ${isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' : 'bg-[#141414] border-[#d4af37]/20 text-[#a1a1a1] hover:border-[#d4af37]/50'}
+                                `}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-12 h-12 flex-shrink-0 rounded flex items-center justify-center overflow-hidden ${isSelected ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#1a1a1a] text-[#555] border-[#333] border'}`}>
+                                        {product.image_url ? (
+                                            <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <Package size={20} />
+                                        )}
+                                    </div>
+                                    <div className="text-left flex-1 pl-2">
+                                        <h3 className="font-bold text-sm uppercase tracking-widest">{product.name}</h3>
+                                        <p className="text-[10px] text-[#d4af37] font-mono tracking-wider">{formattedPrice}</p>
+                                    </div>
+                                </div>
+                                {isSelected && <div className="w-3 h-3 rounded-full bg-[#d4af37] flex-shrink-0"></div>}
+                            </button>
+                        );
+                    })}
+                </div>
             </div>
 
             <button onClick={handleNext} className="gold-button w-full mt-6">
@@ -570,7 +601,7 @@ const MobileBooking = () => {
                             required
                             type="text"
                             placeholder="Nama Lengkap (Cth: Budi Wijaya)"
-                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
+                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                         />
@@ -583,7 +614,7 @@ const MobileBooking = () => {
                             type="tel"
                             placeholder="Telepon (08... atau 628...)"
                             title="Harus dimulai dengan 08 atau 628"
-                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors font-mono tracking-wider"
+                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors font-mono tracking-wider"
                             value={formData.phone}
                             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         />
