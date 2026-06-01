@@ -69,10 +69,9 @@ const LiveSchedule = ({ onSelectSlot }) => {
 
     const fetchBookings = async () => {
         const { data, error } = await supabase
-            .from('bookings')
-            .select('booking_time, barber_name, service_type, status, customer_name')
-            .eq('booking_date', selectedDate)
-            .neq('status', 'cancelled');
+            .from('public_schedule')
+            .select('booking_time, barber_name, service_type, status')
+            .eq('booking_date', selectedDate);
 
         if (error) {
             console.error('Error fetching schedule:', error);

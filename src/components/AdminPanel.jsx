@@ -251,7 +251,7 @@ const AdminPanel = () => {
                         onClick={() => navigate('/_studio_admin/insights')}
                         className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
                     >
-                        <Users size={16} /> CRM Pelanggan
+                        <Users size={16} /> CRM & Blacklist
                     </button>
                     <button
                         onClick={async () => await supabase.auth.signOut()}
