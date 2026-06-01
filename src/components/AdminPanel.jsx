@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star, Image as ImageIcon, Tag } from 'lucide-react';
+import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star, Image as ImageIcon, Tag, MessageSquareText } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom';
@@ -207,102 +207,79 @@ const AdminPanel = () => {
         );
     }
 
-    return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white pt-12 pb-24 px-6 relative">
-            <header className="max-w-7xl mx-auto flex justify-end mb-8">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => navigate('/_studio_admin/products')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <Package size={16} /> Kelola Toko
-                    </button>
-                    <button
-                        onClick={() => navigate('/_studio_admin/services')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <Scissors size={16} /> Layanan
-                    </button>
-                    <button
-                        onClick={() => navigate('/_studio_admin/capsters')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <UserCog size={16} /> Kapster
-                    </button>
-                    <button
-                        onClick={() => navigate('/_studio_admin/gallery')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <ImageIcon size={16} /> Galeri
-                    </button>
-                    <button
-                        onClick={() => navigate('/_studio_admin/categories')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <Tag size={16} /> Kategori
-                    </button>
-                    <button
-                        onClick={() => navigate('/_studio_admin/settings')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <Settings size={16} /> Pengaturan Aplikasi
-                    </button>
-                    <button
-                        onClick={() => navigate('/_studio_admin/insights')}
-                        className="flex items-center gap-2 px-4 py-2 bg-[#1a1a1a] hover:bg-[#d4af37]/20 border border-[#333] hover:border-[#d4af37] transition-all rounded text-sm font-bold text-[#d4af37]"
-                    >
-                        <Users size={16} /> CRM & Blacklist
-                    </button>
-                    <button
-                        onClick={async () => await supabase.auth.signOut()}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors rounded text-sm font-bold"
-                    >
-                        <LogOut size={16} /> Keluar
-                    </button>
-                </div>
-            </header>
-            <div className="max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6">
-                    <div>
-                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Kontrol Studio</span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Manajemen Reservasi</h2>
-                    </div>
+    const navItems = [
+        { label: 'Kelola Toko', icon: Package, path: '/_studio_admin/products' },
+        { label: 'Layanan', icon: Scissors, path: '/_studio_admin/services' },
+        { label: 'Kapster', icon: UserCog, path: '/_studio_admin/capsters' },
+        { label: 'Galeri', icon: ImageIcon, path: '/_studio_admin/gallery' },
+        { label: 'Kategori', icon: Tag, path: '/_studio_admin/categories' },
+        { label: 'Pengaturan Aplikasi', icon: Settings, path: '/_studio_admin/settings' },
+        { label: 'Masukan', icon: MessageSquareText, path: '/_studio_admin/feedback' },
+        { label: 'CRM & Blacklist', icon: Users, path: '/_studio_admin/insights' }
+    ];
 
-                    <div className="flex items-center gap-4 glass-card p-4">
-                        <CalendarIcon size={18} className="text-[#d4af37]" />
-                        <input
-                            type="date"
-                            className="bg-transparent border-none text-white focus:outline-none text-sm cursor-pointer"
-                            value={filterDate}
-                            onChange={(e) => setFilterDate(e.target.value)}
-                        />
+    return (
+        <div className="min-h-screen bg-[#0a0a0a] text-white pt-8 pb-24 px-4 sm:px-6 relative">
+            <div className="max-w-7xl mx-auto">
+                <header className="mb-10 space-y-8">
+                    <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
+                        {navItems.map(({ label, icon: Icon, path }) => (
+                            <button
+                                key={path}
+                                onClick={() => navigate(path)}
+                                className="min-h-[52px] flex items-center justify-center gap-2 px-3 py-3 bg-[#141414] hover:bg-[#d4af37]/15 border border-[#333] hover:border-[#d4af37]/70 transition-all rounded text-xs sm:text-sm font-bold text-[#d4af37] text-center leading-tight"
+                            >
+                                <Icon size={16} className="shrink-0" />
+                                <span>{label}</span>
+                            </button>
+                        ))}
+                        <button
+                            onClick={async () => await supabase.auth.signOut()}
+                            className="min-h-[52px] flex items-center justify-center gap-2 px-3 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/10 hover:border-red-500/40 text-red-400 transition-colors rounded text-xs sm:text-sm font-bold"
+                        >
+                            <LogOut size={16} className="shrink-0" /> Keluar
+                        </button>
+                    </nav>
+
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                        <div>
+                            <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Kontrol Studio</span>
+                            <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Manajemen Reservasi</h2>
+                        </div>
+
+                        <div className="flex items-center gap-4 glass-card px-5 py-4 min-w-[194px]">
+                            <CalendarIcon size={18} className="text-[#d4af37]" />
+                            <input
+                                type="date"
+                                className="bg-transparent border-none text-white focus:outline-none text-sm cursor-pointer w-full"
+                                value={filterDate}
+                                onChange={(e) => setFilterDate(e.target.value)}
+                            />
+                        </div>
                     </div>
-                </div>
+                </header>
 
                 <div className="glass-card overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="border-b border-[#d4af37]/10 bg-[#141414]/50">
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Pelanggan</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Layanan</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Kapster</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Waktu</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Status</th>
-                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold">Aksi</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold w-[56%]">Pelanggan & Reservasi</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold w-[18%]">Status</th>
+                                    <th className="p-6 text-[#d4af37] uppercase tracking-widest text-[10px] font-bold w-[26%]">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <AnimatePresence mode='popLayout'>
                                     {loading ? (
                                         <tr>
-                                            <td colSpan="6" className="p-12 text-center text-[#a1a1a1] italic">
+                                            <td colSpan="3" className="p-12 text-center text-[#a1a1a1] italic">
                                                 Memuat rincian reservasi...
                                             </td>
                                         </tr>
                                     ) : bookings.length === 0 ? (
                                         <tr>
-                                            <td colSpan="6" className="p-12 text-center text-[#a1a1a1] italic">
+                                            <td colSpan="3" className="p-12 text-center text-[#a1a1a1] italic">
                                                 Tidak ada janji temu ditemukan untuk tanggal ini.
                                             </td>
                                         </tr>

@@ -18,6 +18,7 @@ import AdminProducts from './components/AdminProducts';
 import AdminSettings from './components/AdminSettings';
 import AdminServices from './components/AdminServices';
 import AdminBarbers from './components/AdminBarbers';
+import AdminFeedback from './components/AdminFeedback';
 import { Routes, Route } from 'react-router-dom';
 
 import AdminPanel from './components/AdminPanel';
@@ -26,6 +27,7 @@ import Testimonials from './components/Testimonials';
 import Location from './components/Location';
 import Team from './components/Team';
 import WhatsAppButton from './components/WhatsAppButton';
+import FeedbackButton from './components/FeedbackButton';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -97,6 +99,7 @@ function App() {
                                             &copy; {new Date().getFullYear()} AURO BARBERSHOP. HAK CIPTA DILINDUNGI.
                                         </p>
                                     </footer>
+                                    <FeedbackButton />
                                     <WhatsAppButton />
                                 </main>
                             </>
@@ -107,6 +110,7 @@ function App() {
                         <Route path="/_studio_admin" element={<AdminPanel />} />
                         <Route path="/_studio_admin/login" element={<AdminLogin />} />
                         <Route path="/_studio_admin/insights" element={<AdminInsights />} />
+                        <Route path="/_studio_admin/feedback" element={<AdminFeedback />} />
                         <Route path="/_studio_admin/products" element={<AdminProducts />} />
                         <Route path="/_studio_admin/services" element={<AdminServices />} />
                         <Route path="/_studio_admin/capsters" element={<AdminBarbers />} />
