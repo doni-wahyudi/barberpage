@@ -13,6 +13,7 @@ const AdminBarbers = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingBarber, setEditingBarber] = useState(null);
     const [imageFile, setImageFile] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
         is_active: true,
