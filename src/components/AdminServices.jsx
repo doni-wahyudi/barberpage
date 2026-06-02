@@ -29,16 +29,7 @@ const AdminServices = () => {
     const fetchServices = async () => {
         setLoading(true);
         try {
-            const { data, error } = await supabase
-                .from('services')
-                .select('*, categories(name)')
-                .order('sort_order', { ascending: true })
-                .order('created_at', { ascending: true });
-
-            if (error) throw error;
-            setServices(data || []);
-
-            // Fetch categories
+            // 1. Fetch categories first
             const { data: cats, error: catsError } = await supabase
                 .from('categories')
                 .select('*')
@@ -46,6 +37,26 @@ const AdminServices = () => {
             
             if (catsError) throw catsError;
             setCategories(cats || []);
+
+            // 2. Fetch services without join query to bypass missing foreign key constraint
+            const { data, error } = await supabase
+                .from('services')
+                .select('*')
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            // 3. Map category in memory
+            const enrichedServices = (data || []).map(service => {
+                const matchedCategory = (cats || []).find(c => c.id === service.category_id);
+                return {
+                    ...service,
+                    categories: matchedCategory ? { name: matchedCategory.name } : null
+                };
+            });
+
+            setServices(enrichedServices);
         } catch (error) {
             console.error('Error fetching services:', error);
         } finally {
