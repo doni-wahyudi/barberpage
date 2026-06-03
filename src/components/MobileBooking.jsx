@@ -262,6 +262,12 @@ const MobileBooking = () => {
 
                 if (error) throw error;
 
+                if (!newBooking || newBooking.length === 0) {
+                    setFormError('Reservasi gagal. Anda terdeteksi melakukan lebih dari 2 reservasi aktif dalam 7 hari tanpa penyelesaian. Nomor Anda otomatis dimasukkan ke daftar hitam (blacklist).');
+                    setLoading(false);
+                    return;
+                }
+
                 if (voucherData && voucherData.claimId) {
                     await supabase.from('program_claims')
                         .update({ booking_id: newBooking[0].id })
@@ -299,6 +305,12 @@ const MobileBooking = () => {
 
                 if (error) throw error;
 
+                if (!newBooking || newBooking.length === 0) {
+                    setFormError('Reservasi gagal. Anda terdeteksi melakukan lebih dari 2 reservasi aktif dalam 7 hari tanpa penyelesaian. Nomor Anda otomatis dimasukkan ke daftar hitam (blacklist).');
+                    setLoading(false);
+                    return;
+                }
+
                 localStorage.setItem('auro_phone', formData.phone);
 
                 // Deduct points if used
@@ -315,7 +327,7 @@ const MobileBooking = () => {
             }
         } catch (error) {
             console.error('Error booking:', error.message);
-            setFormError('Failed to book. Please try again.');
+            setFormError(error.message || 'Failed to book. Please try again.');
         } finally {
             if (!formError && formData.type === 'service') setLoading(false);
         }

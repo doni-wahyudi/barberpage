@@ -70,7 +70,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const fetchBookings = async () => {
         const { data, error } = await supabase
             .from('public_schedule')
-            .select('booking_time, barber_name, service_type, status')
+            .select('booking_time, barber_name, service_type, status, customer_name')
             .eq('booking_date', selectedDate);
 
         if (error) {
