@@ -28,6 +28,7 @@ import Location from './components/Location';
 import Team from './components/Team';
 import WhatsAppButton from './components/WhatsAppButton';
 import FeedbackButton from './components/FeedbackButton';
+import RefreshButton from './components/RefreshButton';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +41,22 @@ function App() {
         }, 2500);
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        if (!isLoading) {
+            const scrollPosition = sessionStorage.getItem('scrollPosition');
+            if (scrollPosition) {
+                const timer = setTimeout(() => {
+                    window.scrollTo({
+                        top: parseInt(scrollPosition, 10),
+                        behavior: 'instant'
+                    });
+                    sessionStorage.removeItem('scrollPosition');
+                }, 150); // Give 150ms for layout to settle
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [isLoading]);
     const [bookingData, setBookingData] = useState(null);
 
     // Pass open modal trigger to child components where needed
@@ -99,6 +116,7 @@ function App() {
                                             &copy; {new Date().getFullYear()} AURO BARBERSHOP. HAK CIPTA DILINDUNGI.
                                         </p>
                                     </footer>
+                                    <RefreshButton />
                                     <FeedbackButton />
                                     <WhatsAppButton />
                                 </main>

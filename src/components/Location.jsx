@@ -1,13 +1,52 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Clock, Phone, Mail, Instagram, ExternalLink } from 'lucide-react';
+import { useStoreSettings } from '../utils/useStoreSettings';
 
 const Location = () => {
-    const operatingHours = [
-        { day: "Senin - Jumat", time: "10:00 - 22:00" },
-        { day: "Sabtu", time: "Tutup" },
-        { day: "Minggu", time: "10:00 - 22:00" }
-    ];
+    const { settings } = useStoreSettings();
+
+    const getGroupedHours = (dailyHours) => {
+        const sorted = [...dailyHours].sort((a, b) => {
+            const orderA = a.dayOfWeek === 0 ? 7 : a.dayOfWeek;
+            const orderB = b.dayOfWeek === 0 ? 7 : b.dayOfWeek;
+            return orderA - orderB;
+        });
+
+        const groups = [];
+        let currentGroup = null;
+
+        for (const item of sorted) {
+            const timeStr = item.isHoliday ? 'Tutup' : `${item.openingHour} - ${item.closingHour}`;
+            if (!currentGroup) {
+                currentGroup = {
+                    startDay: item.dayName,
+                    endDay: item.dayName,
+                    time: timeStr
+                };
+            } else if (currentGroup.time === timeStr) {
+                currentGroup.endDay = item.dayName;
+            } else {
+                groups.push(currentGroup);
+                currentGroup = {
+                    startDay: item.dayName,
+                    endDay: item.dayName,
+                    time: timeStr
+                };
+            }
+        }
+        if (currentGroup) {
+            groups.push(currentGroup);
+        }
+
+        return groups.map(g => {
+            const dayLabel = g.startDay === g.endDay ? g.startDay : `${g.startDay} - ${g.endDay}`;
+            return { day: dayLabel, time: g.time };
+        });
+    };
+
+    const operatingHours = getGroupedHours(settings.daily_hours);
+
 
     return (
         <section id="location" className="py-24 bg-[#0a0a0a] border-t border-[#d4af37]/5">

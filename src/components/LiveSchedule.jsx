@@ -2,12 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, Users, RefreshCw, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
+import { useStoreSettings } from '../utils/useStoreSettings';
 
-const TIME_SLOTS = [
-    "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
-    "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
-    "17:00", "17:30", "18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30"
-];
 const formatDateLabel = (dateStr) => {
     const date = new Date(dateStr + 'T00:00:00');
     const today = new Date();
@@ -20,23 +16,86 @@ const formatDateLabel = (dateStr) => {
     return date.toLocaleDateString('id-ID', { weekday: 'long', month: 'long', day: 'numeric' });
 };
 
-const isSaturday = (dateStr) => {
-    return new Date(dateStr + 'T00:00:00').getDay() === 6;
+const isDateHoliday = (dateStr, dailyHours) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const dayOfWeek = d.getDay();
+    const daySchedule = dailyHours.find(ds => ds.dayOfWeek === dayOfWeek);
+    return daySchedule ? daySchedule.isHoliday : false;
+};
+
+const getFirstAvailableDate = (startDate, dailyHours) => {
+    let d = new Date(startDate + 'T00:00:00');
+    for (let i = 0; i < 7; i++) {
+        const dayOfWeek = d.getDay();
+        const daySchedule = dailyHours.find(ds => ds.dayOfWeek === dayOfWeek);
+        if (daySchedule && !daySchedule.isHoliday) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        d.setDate(d.getDate() + 1);
+    }
+    return startDate;
 };
 
 const LiveSchedule = ({ onSelectSlot }) => {
+    const { settings } = useStoreSettings();
     const [bookings, setBookings] = useState([]);
     const [barbers, setBarbers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState(null);
-    const getInitialDate = () => {
-        const d = new Date();
-        // Removed Saturday auto-skip to allow showing 'Closed' status for today if Saturday
-        return d.toISOString().split('T')[0];
+
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const defaultDailyHours = [
+            { dayOfWeek: 1, dayName: 'Senin', isHoliday: false },
+            { dayOfWeek: 2, dayName: 'Selasa', isHoliday: false },
+            { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false },
+            { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false },
+            { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false },
+            { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true },
+            { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false }
+        ];
+        let d = new Date(todayStr + 'T00:00:00');
+        for (let i = 0; i < 7; i++) {
+            const dayOfWeek = d.getDay();
+            const daySchedule = defaultDailyHours.find(ds => ds.dayOfWeek === dayOfWeek);
+            if (daySchedule && !daySchedule.isHoliday) {
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            }
+            d.setDate(d.getDate() + 1);
+        }
+        return todayStr;
+    });
+
+    const getSlotsForDate = (dateStr) => {
+        const d = new Date(dateStr + 'T00:00:00');
+        const dayOfWeek = d.getDay();
+        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        if (!daySchedule || daySchedule.isHoliday) return [];
+
+        const slots = [];
+        const [startH, startM] = daySchedule.openingHour.split(':').map(Number);
+        const [endH, endM] = daySchedule.closingHour.split(':').map(Number);
+
+        let currentMins = startH * 60 + startM;
+        const endMins = endH * 60 + endM;
+
+        while (currentMins <= endMins - 30) {
+            const h = Math.floor(currentMins / 60);
+            const m = currentMins % 60;
+            slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+            currentMins += 30;
+        }
+        return slots;
     };
 
-    const [selectedDate, setSelectedDate] = useState(getInitialDate());
-    const TOTAL_CAPACITY = Math.floor(Math.max(barbers.length, 1) * (TIME_SLOTS.length / 2));
+    const timeSlots = getSlotsForDate(selectedDate);
+    const TOTAL_CAPACITY = Math.floor(Math.max(barbers.length, 1) * (timeSlots.length / 2));
     const today = new Date().toISOString().split('T')[0];
     const isToday = selectedDate === today;
 
@@ -48,8 +107,6 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const changeDate = (days) => {
         const d = new Date(selectedDate + 'T00:00:00');
         d.setDate(d.getDate() + days);
-
-        // Removed Saturday auto-skip
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -100,7 +157,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
     }, [selectedDate]);
 
     const bookedCount = bookings.length;
-    const trafficPercent = Math.round((bookedCount / TOTAL_CAPACITY) * 100);
+    const trafficPercent = TOTAL_CAPACITY > 0 ? Math.round((bookedCount / TOTAL_CAPACITY) * 100) : 0;
 
     const getTrafficLabel = () => {
         if (trafficPercent < 30) return { text: 'Sepi', color: 'text-green-400', barColor: 'bg-green-400' };
@@ -138,6 +195,15 @@ const LiveSchedule = ({ onSelectSlot }) => {
     const now = new Date();
     const currentHour = `${String(now.getHours()).padStart(2, '0')}:00`;
 
+    const getHolidayDayName = (dateStr) => {
+        const d = new Date(dateStr + 'T00:00:00');
+        const dayOfWeek = d.getDay();
+        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        return daySchedule ? daySchedule.dayName : 'ini';
+    };
+
+    const isCurrentDateHoliday = isDateHoliday(selectedDate, settings.daily_hours);
+
     return (
         <section id="schedule" className="py-24 bg-[#0a0a0a] border-t border-[#d4af37]/10">
             <div className="max-w-7xl mx-auto px-6">
@@ -158,29 +224,30 @@ const LiveSchedule = ({ onSelectSlot }) => {
                         <div className="flex gap-2 text-xs font-bold uppercase tracking-widest">
                             <button
                                 onClick={() => {
-                                    const d = new Date();
-                                    if (d.getDay() === 6) d.setDate(d.getDate() + 1);
-                                    setSelectedDate(d.toISOString().split('T')[0]);
+                                    setSelectedDate(getFirstAvailableDate(today, settings.daily_hours));
                                 }}
-                                className={`px-4 py-2 rounded transition-colors ${selectedDate === today || (new Date().getDay() === 6 && selectedDate === new Date(new Date().setDate(new Date().getDate() + 1)).toISOString().split('T')[0]) ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'}`}
+                                className={`px-4 py-2 rounded transition-colors ${selectedDate === getFirstAvailableDate(today, settings.daily_hours) ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'}`}
                             >
                                 Hari Ini
                             </button>
                             <button
                                 onClick={() => {
-                                    const d = new Date();
-                                    d.setDate(d.getDate() + 1);
-                                    if (d.getDay() === 6) d.setDate(d.getDate() + 1); // skip saturday
-                                    setSelectedDate(d.toISOString().split('T')[0]);
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                                    setSelectedDate(getFirstAvailableDate(tomorrowStr, settings.daily_hours));
                                 }}
-                                className={`px-4 py-2 rounded transition-colors ${selectedDate === new Date(new Date().setDate(new Date().getDate() + 1 + (new Date(new Date().setDate(new Date().getDate() + 1)).getDay() === 6 ? 1 : 0))).toISOString().split('T')[0]
-                                    ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'
-                                    }`}
+                                className={`px-4 py-2 rounded transition-colors ${selectedDate === (() => {
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                                    return getFirstAvailableDate(tomorrowStr, settings.daily_hours);
+                                })() ? 'bg-[#d4af37] text-black' : 'bg-[#141414] text-[#a1a1a1] hover:text-[#d4af37] border border-[#d4af37]/20'}`}
                             >
                                 Besok
                             </button>
                         </div>
-
+ 
                         {/* Date Navigation */}
                         <div className="flex items-center gap-2 glass-card px-3 py-2">
                             <button
@@ -198,16 +265,18 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                     min={today}
                                     max={maxDateStr}
                                     onChange={(e) => {
-                                        const date = new Date(e.target.value);
-                                        if (date.getDay() === 6) {
-                                            alert('Jadwal tidak tersedia (Tutup pada hari Sabtu).');
+                                        const d = new Date(e.target.value + 'T00:00:00');
+                                        const dayOfWeek = d.getDay();
+                                        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+                                        if (daySchedule && daySchedule.isHoliday) {
+                                            alert(`Jadwal tidak tersedia (Tutup pada hari ${daySchedule.dayName}).`);
                                             return;
                                         }
                                         setSelectedDate(e.target.value);
                                     }}
                                     className="bg-transparent border-none text-white text-xs focus:outline-none cursor-pointer"
                                     style={{ colorScheme: 'dark' }}
-                                />
+                                 />
                             </div>
                             <button
                                 onClick={() => changeDate(1)}
@@ -228,8 +297,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
                         </div>
                     </div>
                 </div>
-
-                {isSaturday(selectedDate) ? (
+ 
+                {isCurrentDateHoliday ? (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -237,7 +306,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
                     >
                         <Clock className="mx-auto text-red-500 mb-4 opacity-50" size={48} />
                         <h3 className="text-2xl font-bold text-red-500 uppercase tracking-widest">Barbershop Tutup</h3>
-                        <p className="text-[#a1a1a1] mt-2">Maaf, kami tutup setiap hari Sabtu. Silakan pilih tanggal lain untuk reservasi.</p>
+                        <p className="text-[#a1a1a1] mt-2">Maaf, kami tutup setiap hari {getHolidayDayName(selectedDate)}. Silakan pilih tanggal lain untuk reservasi.</p>
+
 
                         <div className="flex justify-center gap-4 mt-8">
                             <button
@@ -287,7 +357,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                 )}
 
                 {/* Per-Barber Timeline */}
-                <div className={`space-y-4 ${isSaturday(selectedDate) ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
+                <div className={`space-y-4 ${isCurrentDateHoliday ? 'opacity-30 pointer-events-none grayscale' : ''}`}>
                     {barbers.map((barber, bIndex) => {
                         const barberBookings = bookings.filter(b => b.barber_name === barber);
                         return (
@@ -309,24 +379,24 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                         <div>
                                             <p className="text-sm font-semibold">{barber}</p>
                                             <p className="text-[10px] text-[#a1a1a1]">
-                                                {barberBookings.length}/{TIME_SLOTS.length} dipesan
+                                                {barberBookings.length}/{timeSlots.length} dipesan
                                             </p>
                                         </div>
                                     </div>
-
+ 
                                     <div className="flex-1 overflow-x-auto">
                                         <div className="flex gap-1.5 min-w-max">
-                                            {TIME_SLOTS.map(slot => {
+                                            {timeSlots.map(slot => {
                                                 const { booking, isBlocked } = getSlotState(barber, slot);
                                                 const isPast = isToday && slot < currentHour;
                                                 const isCurrent = isToday && slot === currentHour;
-
+ 
                                                 return (
                                                     <div
                                                         key={slot}
                                                         onClick={() => {
                                                             if (!isBlocked && !isPast && onSelectSlot) {
-                                                                onSelectSlot({ barber, time: slot, date: selectedDate });
+                                                                 onSelectSlot({ barber, time: slot, date: selectedDate });
                                                             }
                                                         }}
                                                         className={`

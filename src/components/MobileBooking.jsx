@@ -6,6 +6,7 @@ import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee,
 import { Link } from 'react-router-dom';
 import CircularTimePicker from './CircularTimePicker';
 import VoucherClaim from './VoucherClaim';
+import { useStoreSettings } from '../utils/useStoreSettings';
 
 const MobileBooking = () => {
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ const MobileBooking = () => {
     const [categories, setCategories] = useState([]);
     const [activeCategory, setActiveCategory] = useState(null);
     const [formError, setFormError] = useState('');
+    const { settings } = useStoreSettings();
 
     // Loyalty State
     const [userPoints, setUserPoints] = useState(0);
@@ -33,9 +35,29 @@ const MobileBooking = () => {
         service: '',
         barber: '',
         date: (() => {
-            const d = new Date();
-            if (d.getDay() === 6) d.setDate(d.getDate() + 1);
-            return d.toISOString().split('T')[0];
+            const todayStr = new Date().toISOString().split('T')[0];
+            const defaultDailyHours = [
+                { dayOfWeek: 1, dayName: 'Senin', isHoliday: false },
+                { dayOfWeek: 2, dayName: 'Selasa', isHoliday: false },
+                { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false },
+                { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false },
+                { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false },
+                { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true },
+                { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false }
+            ];
+            let d = new Date(todayStr + 'T00:00:00');
+            for (let i = 0; i < 7; i++) {
+                const dayOfWeek = d.getDay();
+                const daySchedule = defaultDailyHours.find(ds => ds.dayOfWeek === dayOfWeek);
+                if (daySchedule && !daySchedule.isHoliday) {
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            return todayStr;
         })(),
         time: '',
         addons: []
@@ -66,12 +88,36 @@ const MobileBooking = () => {
         const now = new Date();
         const currentMins = now.getHours() * 60 + now.getMinutes();
 
-        if (currentMins < 9 * 60 || currentMins > 20 * 60) return false;
+        const dayOfWeek = now.getDay();
+        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        if (!daySchedule || daySchedule.isHoliday) return false;
+
+        const [startH, startM] = daySchedule.openingHour.split(':').map(Number);
+        const [endH, endM] = daySchedule.closingHour.split(':').map(Number);
+
+        const startMins = startH * 60 + startM;
+        const endMins = (endH * 60 + endM) - 60; // Last slot starts 60 mins before closing
+
+        if (currentMins < startMins || currentMins > endMins) return false;
 
         return !bookedSlots.some(b => {
             return Math.abs(currentMins - parseTime(b)) < 60;
         });
     };
+
+    const getPickerHoursForDate = (dateStr) => {
+        const d = new Date(dateStr + 'T00:00:00');
+        const dayOfWeek = d.getDay();
+        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        if (!daySchedule || daySchedule.isHoliday) return { start: 10, end: 21 };
+        
+        const start = parseInt(daySchedule.openingHour.split(':')[0], 10);
+        const end = parseInt(daySchedule.closingHour.split(':')[0], 10);
+        return { start, end };
+    };
+
+    const { start: pickerStartTime, end: pickerEndTime } = getPickerHoursForDate(formData.date);
+
 
     useEffect(() => {
         const fetchBookings = async () => {
@@ -398,9 +444,11 @@ const MobileBooking = () => {
                         style={{ colorScheme: 'dark' }}
                         value={formData.date}
                         onChange={(e) => {
-                            const date = new Date(e.target.value);
-                            if (date.getDay() === 6) {
-                                alert('Mohon maaf, kami tutup pada hari Sabtu.');
+                            const d = new Date(e.target.value + 'T00:00:00');
+                            const dayOfWeek = d.getDay();
+                            const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+                            if (daySchedule && daySchedule.isHoliday) {
+                                alert(`Mohon maaf, kami tutup pada hari ${daySchedule.dayName}.`);
                                 return;
                             }
                             setFormData({ ...formData, date: e.target.value });
@@ -458,6 +506,8 @@ const MobileBooking = () => {
                         onChange={(time) => setFormData({ ...formData, time })}
                         bookedSlots={bookedSlots}
                         interval={5}
+                        startTime={pickerStartTime}
+                        endTime={pickerEndTime}
                     />
                 </div>
             </div>

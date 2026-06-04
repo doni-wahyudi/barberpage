@@ -2,6 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Scissors, Search } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useStoreSettings } from '../utils/useStoreSettings';
+
+const formatTime12h = (timeStr) => {
+    if (!timeStr) return '';
+    const [hStr, mStr] = timeStr.split(':');
+    const h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const displayH = h % 12 || 12;
+    return `${displayH} ${ampm}`;
+};
 
 const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [scrolled, setScrolled] = useState(false);
@@ -9,18 +19,33 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [isVisible, setIsVisible] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
     const lastScrollY = useRef(0);
+    const { settings } = useStoreSettings();
 
     useEffect(() => {
         const checkOpenStatus = () => {
             const now = new Date();
-            const hours = now.getHours();
-            // Store Open 10 AM - 9 PM
-            setIsOpen(hours >= 10 && hours < 21);
+            const dayOfWeek = now.getDay();
+            const daySchedule = settings.daily_hours.find(d => d.dayOfWeek === dayOfWeek);
+
+            if (!daySchedule || daySchedule.isHoliday) {
+                setIsOpen(false);
+                return;
+            }
+
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            const [startH, startM] = daySchedule.openingHour.split(':').map(Number);
+            const [endH, endM] = daySchedule.closingHour.split(':').map(Number);
+            
+            const openMins = startH * 60 + startM;
+            const closeMins = endH * 60 + endM;
+
+            setIsOpen(currentMins >= openMins && currentMins < closeMins);
         };
+
         checkOpenStatus();
         const interval = setInterval(checkOpenStatus, 60000); // check every minute
         return () => clearInterval(interval);
-    }, []);
+    }, [settings]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -50,6 +75,12 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
         { name: 'Reservasi', href: '#booking' },
     ];
 
+    const todayOfWeek = new Date().getDay();
+    const todaySchedule = settings.daily_hours.find(d => d.dayOfWeek === todayOfWeek);
+    const displayHoursText = todaySchedule && !todaySchedule.isHoliday
+        ? `${formatTime12h(todaySchedule.openingHour)} - ${formatTime12h(todaySchedule.closingHour)}`
+        : 'CLOSED';
+
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-md py-4 border-b border-[#d4af37]/20' : 'bg-transparent py-6'
@@ -71,7 +102,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                                     {isOpen ? 'Open Now' : 'Closed'}
                                 </span>
                             </div>
-                            <span className="text-[8px] text-[#555] uppercase tracking-widest mt-0.5">10 AM - 09 PM</span>
+                            <span className="text-[8px] text-[#555] uppercase tracking-widest mt-0.5">{displayHoursText}</span>
                         </div>
                     )}
                 </motion.div>
