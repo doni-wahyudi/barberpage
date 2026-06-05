@@ -226,7 +226,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             if (error) throw error;
 
             if (!newBooking || newBooking.length === 0) {
-                setFormError('Reservasi gagal. Anda terdeteksi melakukan lebih dari 2 reservasi aktif dalam 7 hari tanpa penyelesaian. Nomor Anda otomatis dimasukkan ke daftar hitam (blacklist).');
+                setFormError('Booking gagal. Lo terdeteksi punya lebih dari 2 booking aktif dalam 7 hari terakhir yang gak selesai. Nomor lo otomatis di-blacklist.');
                 setLoading(false);
                 return;
             }
@@ -273,11 +273,11 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                 >
                                     <CheckCircle size={80} />
                                 </motion.div>
-                                <h3 className="serif text-3xl font-bold mb-2">Booking Confirmed</h3>
-                                <p className="text-[#a1a1a1] mb-6">Your royal seat is reserved. See you soon!</p>
+                                <h3 className="serif text-3xl font-bold mb-2">Booking Aman! 🔥</h3>
+                                <p className="text-[#a1a1a1] mb-6">Slot lo udah dikunci. Siap-siap glow up!</p>
 
                                 <div className="bg-[#141414] p-4 rounded-lg border border-[#d4af37]/20 mb-6">
-                                    <p className="text-xs uppercase tracking-widest text-[#d4af37] mb-2">Your Queue Monitor</p>
+                                    <p className="text-xs uppercase tracking-widest text-[#d4af37] mb-2">Pantau Antrean Live</p>
                                     <p className="text-sm font-mono break-all text-white/80">
                                         {window.location.origin}/queue/{success}
                                     </p>
@@ -306,7 +306,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         ) : (
                             <>
                                 <div className="flex justify-between items-center mb-6">
-                                    <h3 className="serif text-2xl font-bold">Reservasi Kursi Anda</h3>
+                                    <h3 className="serif text-2xl font-bold">Secure Your Slot</h3>
                                     <button onClick={onClose} className="text-[#a1a1a1] hover:text-[#d4af37]">
                                         <X size={24} />
                                     </button>
@@ -321,7 +321,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             <input
                                                 required
                                                 type="text"
-                                                placeholder="Nama Lengkap"
+                                                placeholder="Nama Lengkap Lo"
                                                 className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -333,7 +333,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             <input
                                                 required
                                                 type="tel"
-                                                placeholder="Nomor HP"
+                                                placeholder="Nomor HP Lo"
                                                 className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
                                                 value={formData.phone}
                                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -379,7 +379,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     type="button"
                                                     onClick={() => {
                                                         if (!formData.barber) {
-                                                            setFormError('Silakan pilih Kapster terlebih dahulu untuk melihat ketersediaan datang langsung.');
+                                                            setFormError('Pilih Capster dulu ya buat cek ketersediaan walk-in.');
                                                             return;
                                                         }
                                                         if (isNowAvailable()) {
@@ -394,7 +394,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                     `}
                                                 >
                                                     <Clock size={16} />
-                                                    {!formData.barber ? `Cek Datang Langsung untuk ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Tidak Tersedia (Penuh)' : `Pesan Datang Langsung (${getNowTimeStr()})`)}
+                                                    {!formData.barber ? `Cek Walk-in Kunjungan untuk ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Tidak Tersedia (Penuh)' : `Booking Walk-in (${getNowTimeStr()})`)}
                                                 </button>
                                             </div>
                                         )}
@@ -405,7 +405,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             value={formData.service}
                                             onChange={(e) => setFormData({ ...formData, service: e.target.value })}
                                         >
-                                            <option value="" disabled>Pilih Layanan</option>
+                                            <option value="" disabled>Pilih Services</option>
                                             {services.map(s => (
                                                 <option key={s} value={s}>{s}</option>
                                             ))}
@@ -417,7 +417,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             value={formData.barber}
                                             onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
                                         >
-                                            <option value="" disabled>Pilih Kapster</option>
+                                            <option value="" disabled>Pilih Capster</option>
                                             {barbers.map(b => (
                                                 <option key={b} value={b}>{b}</option>
                                             ))}
@@ -443,7 +443,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                 className="w-5 h-5 border-2 border-black border-t-transparent rounded-full"
                                             />
                                         ) : (
-                                            'KONFIRMASI RESERVASI'
+                                            'KONFIRMASI BOOKING'
                                         )}
                                     </button>
                                 </form>

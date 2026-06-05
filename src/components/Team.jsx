@@ -64,7 +64,7 @@ const Team = () => {
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <div className="flex flex-wrap justify-center gap-10">
                     {barbers.map((barber, index) => (
                         <motion.div
                             key={barber.id}
@@ -72,7 +72,7 @@ const Team = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
-                            className="group relative"
+                            className="group relative w-full sm:w-[360px] md:w-[380px] flex-shrink-0"
                         >
                             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-[#d4af37]/10 bg-[#141414]">
                                 {barber.photo_url ? (

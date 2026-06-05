@@ -38,7 +38,7 @@ const Services = ({ onSelectService }) => {
                     >
                         Pilihan Menu
                     </motion.span>
-                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Layanan Eksekutif</h2>
+                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Pelayanan Kita</h2>
                 </div>
 
                 {loading ? (

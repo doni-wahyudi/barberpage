@@ -7,7 +7,7 @@ const testimonials = [
         id: 1,
         name: "Arif Wijaya",
         role: "Pelanggan Setia",
-        content: "Perhatian terhadap detail di Auro Barbershop tidak ada duanya. Ini bukan hanya potong rambut, ini adalah pengalaman mewah. Barber Aris tahu persis gaya apa yang cocok dengan bentuk wajah saya.",
+        content: "Gokil sih haircut di Auro! Capster-nya teliti parah, detailnya dapet banget. Hasil potongannya bener-bener pas sama shape muka gua. Auto langganan!",
         stars: 5,
         avatar: "AW"
     },
@@ -15,7 +15,7 @@ const testimonials = [
         id: 2,
         name: "Daniel Santoso",
         role: "Business Executive",
-        content: "Saya menemukan tempat cukur langganan saya di sini. Suasana studio pribadinya sangat nyaman. Tidak terburu-buru, presisi tingkat tinggi, dan pelayanannya sangat ramah.",
+        content: "Vibes studionya cozy abis, berasa eksklusif. Pelayanannya friendly dan capster-nya santuy tapi presisi tinggi pas nyukur. Gak bakal pindah ke barbershop lain.",
         stars: 5,
         avatar: "DS"
     },
@@ -23,7 +23,7 @@ const testimonials = [
         id: 3,
         name: "Budi Pratama",
         role: "Seniman",
-        content: "Potongan Two Block-nya kelas dunia. Mereka benar-benar memahami seni tata rambut pria. Perawatan eksklusifnya benar-benar membuat Anda merasa seperti sultan.",
+        content: "Potongan Two Block di sini beneran tier S! Capster-nya paham banget tren hairstyle cowok jaman sekarang. Treatment-nya bikin rileks maksimal, recommended parah!",
         stars: 5,
         avatar: "BP"
     }
@@ -44,9 +44,9 @@ const Testimonials = () => {
                         whileInView={{ opacity: 1 }}
                         className="uppercase tracking-[0.3em] text-[#d4af37] text-xs"
                     >
-                        Ulasan Kami
+                        AUROPeeps Review
                     </motion.span>
-                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2 text-white">Kata Pelanggan Kami</h2>
+                    <h2 className="serif text-4xl md:text-5xl font-bold mt-2 text-white">Kata AUROPeeps</h2>
                 </div>
 
                 <div className="relative glass-card p-12 md:p-16">
@@ -108,14 +108,14 @@ const Testimonials = () => {
 
                     {/* Review CTA */}
                     <div className="mt-12 text-center border-t border-[#d4af37]/10 pt-8">
-                        <p className="text-[#a1a1a1] text-sm mb-4">Pernah merasakan pengalaman di Auro Barbershop?</p>
+                        <p className="text-[#a1a1a1] text-sm mb-4">Pernah glow up di Auro?</p>
                         <a
                             href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 gold-button !py-3 !px-8 text-sm"
                         >
-                            <Star size={16} className="fill-black" /> Beri Ulasan di Google
+                            <Star size={16} className="fill-black" /> Spill Review Lo di Google!
                         </a>
                     </div>
                 </div>

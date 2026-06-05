@@ -29,6 +29,8 @@ import Team from './components/Team';
 import WhatsAppButton from './components/WhatsAppButton';
 import FeedbackButton from './components/FeedbackButton';
 import RefreshButton from './components/RefreshButton';
+import Leaderboard from './components/Leaderboard';
+import GalleryPage from './components/GalleryPage';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
@@ -88,19 +90,20 @@ function App() {
                                     <Lookbook />
                                     <Team />
                                     <Testimonials />
+                                    <Leaderboard />
                                     <Location />
 
                                     {/* Call to Action Section */}
                                     <section id="booking" className="py-24 border-t border-[#d4af37]/10 bg-gradient-to-b from-[#0a0a0a] to-[#141414]">
                                         <div className="max-w-4xl mx-auto px-6 text-center">
                                             <h2 className="serif text-4xl md:text-6xl font-bold mb-8 italic">
-                                                Siap mendefinisikan ulang <span className="text-[#d4af37]">Identitas</span> Anda?
+                                                Siap <span className="text-[#d4af37]">Level Up</span> Gaya Lo!?
                                             </h2>
                                             <button
                                                 onClick={openBooking}
                                                 className="gold-button !text-lg !px-12 !py-5"
                                             >
-                                                Pesan Kursi Sekarang
+                                                Booking Sekarang
                                             </button>
                                         </div>
                                     </section>
@@ -124,6 +127,7 @@ function App() {
                         } />
                         <Route path="/book" element={<MobileBooking />} />
                         <Route path="/check" element={<CheckOrder />} />
+                        <Route path="/gallery" element={<GalleryPage />} />
                         <Route path="/queue/:id" element={<QueueMonitor />} />
                         <Route path="/_studio_admin" element={<AdminPanel />} />
                         <Route path="/_studio_admin/login" element={<AdminLogin />} />

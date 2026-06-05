@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star, Image as ImageIcon, Tag, MessageSquareText } from 'lucide-react';
+import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star, Image as ImageIcon, Tag, MessageSquareText, Edit, Phone } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,24 @@ const AdminPanel = () => {
     const [loading, setLoading] = useState(true);
     const [authChecking, setAuthChecking] = useState(true);
     const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+    const [editingBooking, setEditingBooking] = useState(null);
+    const [availableBarbers, setAvailableBarbers] = useState([]);
+    const [availableServices, setAvailableServices] = useState([]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const { data: bData } = await supabase.from('barbers').select('name').eq('is_active', true);
+                if (bData) setAvailableBarbers(bData.map(b => b.name));
+
+                const { data: sData } = await supabase.from('services').select('name, price');
+                if (sData) setAvailableServices(sData);
+            } catch (err) {
+                console.error('Failed to fetch options:', err);
+            }
+        };
+        fetchOptions();
+    }, []);
 
     const fetchBookings = async () => {
         setLoading(true);
@@ -377,6 +395,13 @@ const AdminPanel = () => {
                                                     >
                                                         <X size={14} />
                                                     </button>
+                                                    <button
+                                                        onClick={() => setEditingBooking(booking)}
+                                                        className="p-1 glass-card hover:bg-[#d4af37]/20 text-[#d4af37] transition-colors"
+                                                        title="Ubah Rincian Booking"
+                                                    >
+                                                        <Edit size={14} />
+                                                    </button>
                                                 </div>
                                             </td>
                                         </motion.tr>
@@ -386,9 +411,162 @@ const AdminPanel = () => {
                         </table>
                     </div>
                 </div>
-            </div>
-        </div >
-    );
+            {/* Edit Booking Modal */}
+            <AnimatePresence>
+                {editingBooking && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setEditingBooking(null)}
+                            className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+                        />
+
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            className="relative w-full max-w-lg glass-card p-6 md:p-8 shadow-2xl overflow-hidden border border-[#d4af37]/30 bg-[#0c0c0c]"
+                        >
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="serif text-2xl font-bold text-[#d4af37]">Ubah Rincian Booking</h3>
+                                <button onClick={() => setEditingBooking(null)} className="text-[#a1a1a1] hover:text-[#d4af37] transition-colors">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Nama Pelanggan</label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                        value={editingBooking.customer_name || ''}
+                                        onChange={(e) => setEditingBooking({ ...editingBooking, customer_name: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Nomor HP</label>
+                                    <input
+                                        type="tel"
+                                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                        value={editingBooking.phone_number || ''}
+                                        onChange={(e) => setEditingBooking({ ...editingBooking, phone_number: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Tanggal</label>
+                                        <input
+                                            type="date"
+                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                            style={{ colorScheme: 'dark' }}
+                                            value={editingBooking.booking_date || ''}
+                                            onChange={(e) => setEditingBooking({ ...editingBooking, booking_date: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Jam</label>
+                                        <input
+                                            type="time"
+                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                            style={{ colorScheme: 'dark' }}
+                                            value={editingBooking.booking_time ? editingBooking.booking_time.substring(0, 5) : ''}
+                                            onChange={(e) => setEditingBooking({ ...editingBooking, booking_time: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Layanan (Item)</label>
+                                        <select
+                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white appearance-none"
+                                            value={editingBooking.service_type || ''}
+                                            onChange={(e) => {
+                                                const serviceName = e.target.value;
+                                                const serviceObj = availableServices.find(s => s.name === serviceName);
+                                                const price = serviceObj ? serviceObj.price : 0;
+                                                let grandTotal = price - (editingBooking.voucher_discount || 0);
+                                                if (grandTotal < 0) grandTotal = 0;
+                                                setEditingBooking({
+                                                    ...editingBooking,
+                                                    service_type: serviceName,
+                                                    total_price: grandTotal
+                                                });
+                                            }}
+                                        >
+                                            {availableServices.map(s => (
+                                                <option key={s.name} value={s.name}>{s.name} (Rp {s.price.toLocaleString('id-ID')})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Kapster</label>
+                                        <select
+                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white appearance-none"
+                                            value={editingBooking.barber_name || ''}
+                                            onChange={(e) => setEditingBooking({ ...editingBooking, barber_name: e.target.value })}
+                                        >
+                                            {availableBarbers.map(b => (
+                                                <option key={b} value={b}>{b}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-[#141414] rounded border border-[#d4af37]/10 flex justify-between items-center text-xs font-mono">
+                                    <span className="text-[#a1a1a1]">Total Harga (Setelah Potongan):</span>
+                                    <span className="text-[#d4af37] font-bold text-sm">
+                                        Rp {editingBooking.total_price ? editingBooking.total_price.toLocaleString('id-ID') : 0}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 mt-8">
+                                <button
+                                    onClick={() => setEditingBooking(null)}
+                                    className="flex-1 py-3 px-6 bg-transparent border border-[#333] hover:border-red-500/50 hover:text-red-500 transition-colors text-xs uppercase tracking-widest rounded text-[#a1a1a1] font-bold"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        const { error } = await supabase
+                                            .from('bookings')
+                                            .update({
+                                                customer_name: editingBooking.customer_name,
+                                                phone_number: editingBooking.phone_number,
+                                                booking_date: editingBooking.booking_date,
+                                                booking_time: editingBooking.booking_time,
+                                                service_type: editingBooking.service_type,
+                                                barber_name: editingBooking.barber_name,
+                                                total_price: editingBooking.total_price
+                                            })
+                                            .eq('id', editingBooking.id);
+
+                                        if (error) {
+                                            alert('Gagal menyimpan perubahan: ' + error.message);
+                                            return;
+                                        }
+                                        setEditingBooking(null);
+                                        fetchBookings();
+                                    }}
+                                    className="flex-1 gold-button py-3 px-6 text-xs font-bold uppercase tracking-widest text-center"
+                                >
+                                    Simpan Perubahan
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
+    </div>
+);
 };
 
 export default AdminPanel;

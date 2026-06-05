@@ -66,25 +66,25 @@ const Hero = ({ onBooking }) => {
                     style={{ opacity }}
                 >
                     <p className="uppercase tracking-[0.5em] text-[#d4af37] text-sm mb-4">
-                        Rapih Tanpa Ribet
+                        Level Up Gaya Lo!
                     </p>
                     <h2 className="serif text-4xl md:text-8xl font-bold mb-8 leading-tight">
-                        Tingkatkan Penampilan <br />
-                        <span className="gold-gradient italic">Legendaris</span> Anda
+                        Level Up Penampilan <br />
+                        <span className="gold-gradient italic">Kalcer</span> Lo!
                     </h2>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center items-center flex-wrap">
-                        <button onClick={onBooking} className="gold-button w-full sm:w-auto">Reservasi Sekarang</button>
+                        <button onClick={onBooking} className="gold-button w-full sm:w-auto">Booking Sekarang</button>
                         <button
                             onClick={() => document.getElementById('schedule')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all w-full sm:w-auto"
                         >
-                            Cek Jadwal
+                            Jadwal Capster
                         </button>
                         <button
                             onClick={() => document.getElementById('lookbook')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all w-full sm:w-auto"
                         >
-                            Lihat Gaya
+                            Intip Gaya Rambut
                         </button>
                     </div>
                 </motion.div>
@@ -95,8 +95,8 @@ const Hero = ({ onBooking }) => {
                 style={{ y: y2 }}
                 className="absolute bottom-10 left-10 md:left-20 border-l border-[#d4af37] pl-4 hidden md:block"
             >
-                <p className="text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-2">Sejak 2026</p>
-                <p className="serif italic text-[#d4af37]">Dibuat dengan Presisi</p>
+                <p className="text-[10px] uppercase tracking-widest text-[#a1a1a1] mb-2">Est. 2026</p>
+                <p className="serif italic text-[#d4af37]">Crafted with Precision</p>
             </motion.div>
 
             <div className="absolute bottom-10 right-10 md:right-20 hidden md:block">

@@ -309,7 +309,7 @@ const MobileBooking = () => {
                 if (error) throw error;
 
                 if (!newBooking || newBooking.length === 0) {
-                    setFormError('Reservasi gagal. Anda terdeteksi melakukan lebih dari 2 reservasi aktif dalam 7 hari tanpa penyelesaian. Nomor Anda otomatis dimasukkan ke daftar hitam (blacklist).');
+                    setFormError('Booking gagal. Lo terdeteksi punya lebih dari 2 booking aktif dalam 7 hari terakhir yang gak selesai. Nomor lo otomatis di-blacklist.');
                     setLoading(false);
                     return;
                 }
@@ -352,7 +352,7 @@ const MobileBooking = () => {
                 if (error) throw error;
 
                 if (!newBooking || newBooking.length === 0) {
-                    setFormError('Reservasi gagal. Anda terdeteksi melakukan lebih dari 2 reservasi aktif dalam 7 hari tanpa penyelesaian. Nomor Anda otomatis dimasukkan ke daftar hitam (blacklist).');
+                    setFormError('Booking gagal. Lo terdeteksi punya lebih dari 2 booking aktif dalam 7 hari terakhir yang gak selesai. Nomor lo otomatis di-blacklist.');
                     setLoading(false);
                     return;
                 }
@@ -399,7 +399,7 @@ const MobileBooking = () => {
                     <Scissors size={28} className="text-[#d4af37]" />
                 </div>
                 <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Layanan Cukur</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Reservasi dengan kapster kami</p>
+                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Booking dengan capster Auro</p>
             </button>
 
             <button
@@ -410,14 +410,14 @@ const MobileBooking = () => {
                     <Coffee size={28} className="text-[#d4af37]" />
                 </div>
                 <h3 className="font-bold text-lg uppercase tracking-widest text-[#d4af37]">Toko</h3>
-                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Beli koleksi produk kami</p>
+                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider text-center">Beli hair product terkeren</p>
             </button>
 
             <Link
                 to="/check"
                 className="mt-4 py-4 px-6 bg-[#141414] border border-[#d4af37]/20 hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded-lg text-center text-[#d4af37] flex justify-center items-center gap-2 w-full shadow-lg font-bold"
             >
-                <Search size={18} /> Cek Status Reservasi
+                <Search size={18} /> Cek Status Booking
             </Link>
         </motion.div>
     );
@@ -430,7 +430,7 @@ const MobileBooking = () => {
             exit={{ opacity: 0, x: -20 }}
             className="flex flex-col gap-5 w-full"
         >
-            <h2 className="serif text-3xl font-bold mb-2 text-center">Pilih Detail</h2>
+            <h2 className="serif text-3xl font-bold mb-2 text-center">Pilih Hari & Waktu</h2>
             {formError && <p className="text-red-500 text-xs text-center border border-red-500/30 p-2 rounded bg-red-500/10 mb-2">{formError}</p>}
 
             <div className="space-y-4">
@@ -519,7 +519,7 @@ const MobileBooking = () => {
                 to="/check"
                 className="mt-4 py-4 px-6 bg-[#141414] border border-[#d4af37]/20 hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded-lg text-center text-[#d4af37] flex justify-center items-center gap-2 w-full shadow-lg font-bold"
             >
-                <Search size={18} /> Cek Status Reservasi
+                <Search size={18} /> Cek Status Booking
             </Link>
         </motion.div>
     );
@@ -544,12 +544,12 @@ const MobileBooking = () => {
             className="flex flex-col gap-5 w-full"
         >
             <h2 className="serif text-3xl font-bold mb-2 text-center">
-                {formData.type === 'service' ? 'Sempurnakan Kunjungan Anda' : 'Toko Auro'}
+                {formData.type === 'service' ? 'Add-on Hair Product' : 'Toko Auro'}
             </h2>
             <p className="text-[#a1a1a1] text-center text-sm mb-4">
                 {formData.type === 'service'
-                    ? 'Apakah Anda ingin menambahkan produk perawatan rambut ke reservasi Anda?'
-                    : 'Pilih produk premium untuk dibeli dan diambil di toko.'}
+                    ? 'Mau sekalian nambahin produk perawatan rambut biar rambut lo makin badai?'
+                    : 'Pilih hair product premium buat lo bawa pulang.'}
             </p>
 
             <div className="flex flex-col gap-4">
@@ -745,7 +745,7 @@ const MobileBooking = () => {
                         type="submit"
                         className="gold-button w-full flex items-center justify-center gap-2"
                     >
-                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Konfirmasi Reservasi'}
+                        {loading ? <Loader2 className="animate-spin" size={20} /> : 'Konfirmasi Booking'}
                     </button>
                 </form>
             </motion.div>
@@ -760,8 +760,8 @@ const MobileBooking = () => {
             className="flex flex-col items-center justify-center text-center py-8 w-full"
         >
             <div className="text-[#d4af37] mb-6"><CheckCircle size={80} /></div>
-            <h3 className="serif text-3xl font-bold mb-2">Terkonfirmasi</h3>
-            <p className="text-[#a1a1a1] mb-8">Kursi eksklusif Anda telah dipesan.</p>
+            <h3 className="serif text-3xl font-bold mb-2">Booking Aman! 🔥</h3>
+            <p className="text-[#a1a1a1] mb-8">Slot lo udah dikunci. Siap-siap glow up!</p>
 
             <button
                 onClick={() => navigate(`/queue/${successId}`)}
@@ -773,7 +773,7 @@ const MobileBooking = () => {
 
 
             <p className="text-[10px] uppercase tracking-widest text-[#555] mt-6">
-                Simpan tautan ini atau gunakan fitur "Cek Reservasi" nanti.
+                Simpan link ini atau cek status booking lo kapan aja.
             </p>
         </motion.div>
     );

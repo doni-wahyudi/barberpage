@@ -215,7 +215,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                             whileInView={{ opacity: 1 }}
                             className="uppercase tracking-[0.3em] text-[#d4af37] text-xs"
                         >
-                            Pembaruan Langsung
+                            live refresh
                         </motion.span>
                         <h2 className="serif text-4xl md:text-5xl font-bold mt-2">{formatDateLabel(selectedDate)}</h2>
                     </div>
@@ -305,8 +305,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
                         className="glass-card p-12 text-center border-red-500/20 bg-red-500/5 mb-8"
                     >
                         <Clock className="mx-auto text-red-500 mb-4 opacity-50" size={48} />
-                        <h3 className="text-2xl font-bold text-red-500 uppercase tracking-widest">Barbershop Tutup</h3>
-                        <p className="text-[#a1a1a1] mt-2">Maaf, kami tutup setiap hari {getHolidayDayName(selectedDate)}. Silakan pilih tanggal lain untuk reservasi.</p>
+                        <h3 className="text-2xl font-bold text-red-500 uppercase tracking-widest">Barbershop Lagi Off</h3>
+                        <p className="text-[#a1a1a1] mt-2">Lagi off nih. Pilih hari lain ya buat booking!</p>
 
 
                         <div className="flex justify-center gap-4 mt-8">
@@ -331,7 +331,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
                                 <div className="flex items-center gap-3">
                                     <Users size={20} className="text-[#d4af37]" />
                                     <span className="text-sm font-semibold uppercase tracking-wider">
-                                        {isToday ? 'Keramaian Saat Ini' : 'Status Reservasi'}
+                                        {isToday ? 'Traffic Hari Ini' : 'Booking Status'}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -441,14 +441,24 @@ const LiveSchedule = ({ onSelectSlot }) => {
                     viewport={{ once: true }}
                     className="mt-12"
                 >
-                    <div className="flex items-center gap-3 mb-6">
-                        <Users className="text-[#d4af37]" size={24} />
-                        <h3 className="serif text-2xl font-bold">Daftar Pelanggan Terjadwal</h3>
+                    <div className="mb-6">
+                        <div className="flex items-center gap-3">
+                            <Users className="text-[#d4af37]" size={24} />
+                            <h3 className="serif text-2xl font-bold">Lineup Booking Hari Ini</h3>
+                        </div>
+                        <p className="text-xs text-[#a1a1a1] mt-2 leading-relaxed max-w-2xl">
+                            Mau reschedule, ganti capster, ubah layanan, atau edit data booking lo? Hubungi admin via <a href="#whatsapp" onClick={(e) => {
+                                e.preventDefault();
+                                const waBtn = document.querySelector('[aria-label="Chat Auro Barbershop lewat WhatsApp"]');
+                                if (waBtn) waBtn.click();
+                                else window.open('https://wa.me/6285219461408?text=Halo%20Auro!%20Mau%20reschedule%20/%20edit%20data%20booking%20saya%20nih.', '_blank');
+                            }} className="text-[#d4af37] font-semibold hover:underline">tombol WhatsApp di pojok kanan bawah</a>!
+                        </p>
                     </div>
 
                     {bookings.length === 0 ? (
                         <div className="glass-card p-8 text-center text-[#a1a1a1]">
-                            Belum ada jadwal reservasi pelanggan untuk tanggal ini.
+                             Masih kosong melompong nih! Slot capster ready buat lo.
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

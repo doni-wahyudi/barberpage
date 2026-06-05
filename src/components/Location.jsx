@@ -58,8 +58,8 @@ const Location = () => {
                         whileInView={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
                     >
-                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Temukan Kami</span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2 mb-8">Studio Kami</h2>
+                        <span className="uppercase tracking-[0.3em] text-[#d4af37] text-xs">Find Us Here</span>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2 mb-8">Mampir ke Auro</h2>
 
                         <div className="space-y-8">
                             <div className="flex gap-6">
@@ -67,7 +67,7 @@ const Location = () => {
                                     <MapPin className="text-[#d4af37]" size={20} />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Lokasi</h4>
+                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Auro Headquarters</h4>
                                     <p className="text-[#a1a1a1] text-sm leading-relaxed">
                                         Jl. Abdul Muis No.41, Gedong Meneng<br />
                                         Kec. Rajabasa, Kota Bandar Lampung<br />
@@ -89,7 +89,7 @@ const Location = () => {
                                     <Clock className="text-[#d4af37]" size={20} />
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="font-bold text-white mb-3 uppercase tracking-widest text-sm">Jam Operasional</h4>
+                                    <h4 className="font-bold text-white mb-3 uppercase tracking-widest text-sm">Opening Hours</h4>
                                     <div className="space-y-2">
                                         {operatingHours.map((item, i) => (
                                             <div key={i} className="flex justify-between border-b border-[#d4af37]/5 pb-2">
@@ -106,7 +106,7 @@ const Location = () => {
                                     <Phone className="text-[#d4af37]" size={20} />
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Kontak</h4>
+                                    <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Auro Hotline</h4>
                                     <p className="text-[#a1a1a1] text-sm">+62 852 1946 1408</p>
                                     <p className="text-[#a1a1a1] text-sm font-mono mt-1">IG: aurobarbershop.id</p>
                                     <p className="text-[#a1a1a1] text-sm font-mono">TikTok: aurobarbershop.id</p>
@@ -142,7 +142,7 @@ const Location = () => {
                                     rel="noopener noreferrer"
                                     className="gold-button !text-xs pointer-events-auto"
                                 >
-                                    Dapatkan Petunjuk Arah
+                                    Cek Lokasi Kita di Maps
                                 </a>
                             </div>
                         </div>

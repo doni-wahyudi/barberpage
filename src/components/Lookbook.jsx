@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { Image as ImageIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Lookbook = () => {
+    const navigate = useNavigate();
     const [images, setImages] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -42,10 +44,10 @@ const Lookbook = () => {
                         >
                             Galeri
                         </motion.span>
-                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Gaya Rambut Mahakarya</h2>
+                        <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Hairstyle Fit Check</h2>
                     </div>
                     <p className="max-w-md text-[#a1a1a1] text-sm leading-relaxed">
-                        Jelajahi karya terbaru kami dan temukan gaya yang mendefinisikan legenda Anda. Setiap potongan rambut adalah mahakarya presisi dan karakter.
+                        Intip portofolio haircut paling clean dan up-to-date dari capster Auro. Dijamin bikin look lo makin stand out dan confidence lo naik 100%!
                     </p>
                 </div>
 
@@ -92,6 +94,16 @@ const Lookbook = () => {
                             </motion.div>
                         ))
                     )}
+                </div>
+
+                {/* Button to view full gallery page */}
+                <div className="mt-12 text-center">
+                    <button
+                        onClick={() => navigate('/gallery')}
+                        className="px-8 py-4 border border-[#d4af37]/35 text-[#d4af37] bg-[#141414]/90 hover:bg-[#d4af37] hover:text-black rounded uppercase tracking-[0.2em] text-xs transition-all duration-300 font-bold hover:shadow-[0_4px_20px_rgba(212,175,55,0.25)]"
+                    >
+                        Lihat Selengkapnya
+                    </button>
                 </div>
             </div>
         </section>

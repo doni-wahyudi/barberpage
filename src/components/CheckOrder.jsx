@@ -57,7 +57,7 @@ const CheckOrder = () => {
                 const bookingId = data[0].id;
                 navigate(`/queue/${bookingId}`);
             } else {
-                setError("Kami tidak dapat menemukan reservasi aktif dengan nama dan nomor telepon tersebut.");
+                setError("Kami tidak dapat menemukan booking aktif dengan nama dan nomor telepon tersebut.");
             }
         } catch (err) {
             console.error('Check order error:', err);
@@ -75,7 +75,7 @@ const CheckOrder = () => {
                     <ArrowLeft size={24} />
                 </button>
                 <h1 className="serif font-bold text-xl tracking-wider uppercase text-center flex-1">
-                    Cek <span className="text-[#d4af37]">Reservasi</span>
+                    Cek <span className="text-[#d4af37]">Booking</span>
                 </h1>
                 <div className="w-6"></div> {/* Spacer */}
             </header>
@@ -92,7 +92,7 @@ const CheckOrder = () => {
                         <Search className="mx-auto text-[#d4af37] mb-4" size={40} />
                         <h2 className="serif text-2xl font-bold mb-2">Cari Antrean Anda</h2>
                         <p className="text-[#a1a1a1] text-sm">
-                            Masukkan detail yang Anda gunakan saat reservasi.
+                            Masukkan detail yang Anda gunakan saat booking.
                         </p>
                     </div>
 
@@ -106,7 +106,7 @@ const CheckOrder = () => {
                     <form onSubmit={handleCheck} className="space-y-5">
                         <div className="space-y-1">
                             <label className="text-[10px] uppercase font-bold tracking-widest text-[#a1a1a1] ml-1">
-                                Nama Lengkap Sesuai Reservasi
+                                Nama Lengkap Sesuai Booking
                             </label>
                             <input
                                 required

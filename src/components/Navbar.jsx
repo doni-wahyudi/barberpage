@@ -71,8 +71,8 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
         { name: 'Beranda', href: '#home' },
         { name: 'Layanan', href: '#services' },
         { name: 'Jadwal', href: '#schedule' },
-        { name: 'Gaya Berambut', href: '#lookbook' },
-        { name: 'Reservasi', href: '#booking' },
+        { name: 'Hairstyle', href: '#lookbook' },
+        { name: 'Booking', href: '#booking' },
     ];
 
     const todayOfWeek = new Date().getDay();
@@ -136,7 +136,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                                 to="/check"
                                 className="text-xs uppercase tracking-widest text-[#a1a1a1] hover:text-[#d4af37] transition-colors flex items-center gap-2"
                             >
-                                <Search size={14} /> Cek Reservasi
+                                <Search size={14} /> Cek Booking
                             </Link>
                             <motion.button
                                 initial={{ opacity: 0, scale: 0.9 }}
@@ -144,7 +144,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                                 onClick={onBooking}
                                 className="gold-button !py-2 !px-6 !text-xs"
                             >
-                                Reservasi
+                                Booking
                             </motion.button>
                         </>
                     )}
@@ -192,9 +192,9 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                                 ))}
                                 <div className="flex flex-col gap-4 w-full mt-2">
                                     <Link to="/check" onClick={() => setMobileMenuOpen(false)} className="py-3 px-6 bg-transparent border border-[#333] hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded text-center text-white flex justify-center items-center gap-2">
-                                        <Search size={16} /> Cek Reservasi
+                                        <Search size={16} /> Cek Booking
                                     </Link>
-                                    <button onClick={() => { onBooking(); setMobileMenuOpen(false); }} className="gold-button w-full">Reservasi</button>
+                                    <button onClick={() => { onBooking(); setMobileMenuOpen(false); }} className="gold-button w-full">Booking</button>
                                 </div>
                             </>
                         )}
