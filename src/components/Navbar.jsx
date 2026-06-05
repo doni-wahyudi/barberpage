@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Scissors, Search } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useStoreSettings } from '../utils/useStoreSettings';
+
+const MotionLink = motion(Link);
 
 const formatTime12h = (timeStr) => {
     if (!timeStr) return '';
@@ -20,6 +22,8 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     const [isOpen, setIsOpen] = useState(false);
     const lastScrollY = useRef(0);
     const { settings } = useStoreSettings();
+    const location = useLocation();
+    const isHomePage = location.pathname === '/';
 
     useEffect(() => {
         const checkOpenStatus = () => {
@@ -68,11 +72,11 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
     }, [scrolled, mobileMenuOpen]);
 
     const navLinks = [
-        { name: 'Beranda', href: '#home' },
-        { name: 'Layanan', href: '#services' },
-        { name: 'Jadwal', href: '#schedule' },
-        { name: 'Hairstyle', href: '#lookbook' },
-        { name: 'Booking', href: '#booking' },
+        { name: 'Beranda', href: '#home', isRoute: false },
+        { name: 'Layanan', href: '#services', isRoute: false },
+        { name: 'Jadwal', href: '#schedule', isRoute: false },
+        { name: 'Gallery', href: '/gallery', isRoute: true },
+        { name: 'Booking', href: '#booking', isRoute: false },
     ];
 
     const todayOfWeek = new Date().getDay();
@@ -93,7 +97,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                     className="flex items-center gap-4 cursor-pointer"
                     onClick={() => isAdminView && onAdminToggle()}
                 >
-                    <img src={`${import.meta.env.BASE_URL}auro_logo.webp`} alt="Auro Logo" className="h-14 md:h-20 py-1 object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.webp?v=3`} alt="Auro Logo" className="h-10 md:h-14 py-1 object-contain" />
                     {!isAdminView && (
                         <div className="flex flex-col">
                             <div className="flex items-center gap-2">
@@ -120,24 +124,43 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                         </motion.button>
                     ) : (
                         <>
-                            {navLinks.map((link, index) => (
-                                <motion.a
-                                    key={link.name}
-                                    href={link.href}
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="text-xs uppercase tracking-widest hover:text-[#d4af37] transition-colors"
-                                >
-                                    {link.name}
-                                </motion.a>
-                            ))}
-                            <Link
+                            {navLinks.map((link, index) => {
+                                if (link.isRoute) {
+                                    return (
+                                        <MotionLink
+                                            key={link.name}
+                                            to={link.href}
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            className="text-xs uppercase tracking-widest hover:text-[#d4af37] transition-colors"
+                                        >
+                                            {link.name}
+                                        </MotionLink>
+                                    );
+                                }
+                                return (
+                                    <motion.a
+                                        key={link.name}
+                                        href={isHomePage ? link.href : `/${link.href}`}
+                                        initial={{ opacity: 0, y: -10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                        className="text-xs uppercase tracking-widest hover:text-[#d4af37] transition-colors"
+                                    >
+                                        {link.name}
+                                    </motion.a>
+                                );
+                            })}
+                            <MotionLink
                                 to="/check"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: navLinks.length * 0.1 }}
                                 className="text-xs uppercase tracking-widest text-[#a1a1a1] hover:text-[#d4af37] transition-colors flex items-center gap-2"
                             >
                                 <Search size={14} /> Cek Booking
-                            </Link>
+                            </MotionLink>
                             <motion.button
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
@@ -180,16 +203,30 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
                             </button>
                         ) : (
                             <>
-                                {navLinks.map((link) => (
-                                    <a
-                                        key={link.name}
-                                        href={link.href}
-                                        className="text-sm uppercase tracking-widest text-white/80 hover:text-[#d4af37] transition-colors"
-                                        onClick={() => setMobileMenuOpen(false)}
-                                    >
-                                        {link.name}
-                                    </a>
-                                ))}
+                                {navLinks.map((link) => {
+                                    if (link.isRoute) {
+                                        return (
+                                            <Link
+                                                key={link.name}
+                                                to={link.href}
+                                                className="text-sm uppercase tracking-widest text-white/80 hover:text-[#d4af37] transition-colors"
+                                                onClick={() => setMobileMenuOpen(false)}
+                                            >
+                                                {link.name}
+                                            </Link>
+                                        );
+                                    }
+                                    return (
+                                        <a
+                                            key={link.name}
+                                            href={isHomePage ? link.href : `/${link.href}`}
+                                            className="text-sm uppercase tracking-widest text-white/80 hover:text-[#d4af37] transition-colors"
+                                            onClick={() => setMobileMenuOpen(false)}
+                                        >
+                                            {link.name}
+                                        </a>
+                                    );
+                                })}
                                 <div className="flex flex-col gap-4 w-full mt-2">
                                     <Link to="/check" onClick={() => setMobileMenuOpen(false)} className="py-3 px-6 bg-transparent border border-[#333] hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded text-center text-white flex justify-center items-center gap-2">
                                         <Search size={16} /> Cek Booking

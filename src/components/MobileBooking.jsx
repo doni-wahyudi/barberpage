@@ -788,7 +788,7 @@ const MobileBooking = () => {
                 )}
                 {successId && <div className="w-6" />}
                 <div className="flex-1 flex justify-center py-2">
-                    <img src={`${import.meta.env.BASE_URL}auro_logo_tagline.webp`} alt="Auro Logo" className="h-24 md:h-32 object-contain" />
+                    <img src={`${import.meta.env.BASE_URL}auro_logo.webp?v=3`} alt="Auro Logo" className="h-24 md:h-32 object-contain" />
                 </div>
                 <div className="w-6"></div>
             </header>
