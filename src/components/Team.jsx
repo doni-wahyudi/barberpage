@@ -72,7 +72,7 @@ const Team = () => {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: index * 0.1 }}
-                            className="group relative w-full sm:w-[360px] md:w-[380px] flex-shrink-0"
+                            className="group relative w-full sm:w-[320px] md:w-[330px] lg:w-[360px] xl:w-[380px] flex-shrink-0"
                         >
                             <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-[#d4af37]/10 bg-[#141414]">
                                 {barber.photo_url ? (

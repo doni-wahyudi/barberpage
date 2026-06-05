@@ -779,21 +779,25 @@ const MobileBooking = () => {
     );
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans relative">
-            <header className="p-6 flex items-center justify-between border-b border-[#d4af37]/10 bg-[#121212] sticky top-0 z-10 w-full max-w-md mx-auto">
-                {!successId && (
-                    <button onClick={handleBack} className="text-[#a1a1a1] hover:text-[#d4af37] transition">
-                        <ArrowLeft size={24} />
-                    </button>
-                )}
-                {successId && <div className="w-6" />}
-                <div className="flex-1 flex justify-center py-2">
-                    <img src={`${import.meta.env.BASE_URL}auro_logo.webp?v=3`} alt="Auro Logo" className="h-24 md:h-32 object-contain" />
+        <div className="min-h-screen bg-[#0a0a0a] text-white flex flex-col font-sans relative overflow-x-hidden">
+            {/* Full-width sticky header with inner content constrained */}
+            <header className="sticky top-0 z-10 w-full border-b border-[#d4af37]/10 bg-[#121212]">
+                <div className="flex items-center justify-between px-5 py-3 w-full max-w-md mx-auto">
+                    {!successId ? (
+                        <button onClick={handleBack} className="text-[#a1a1a1] hover:text-[#d4af37] transition flex-shrink-0">
+                            <ArrowLeft size={22} />
+                        </button>
+                    ) : (
+                        <div className="w-6" />
+                    )}
+                    <div className="flex-1 flex justify-center">
+                        <img src={`${import.meta.env.BASE_URL}auro_logo.webp?v=3`} alt="Auro Logo" className="h-10 object-contain" />
+                    </div>
+                    <div className="w-6 flex-shrink-0"></div>
                 </div>
-                <div className="w-6"></div>
             </header>
 
-            <main className="flex-1 flex flex-col items-center p-6 pt-12 w-full max-w-md mx-auto">
+            <main className="flex-1 flex flex-col items-center px-5 pt-8 pb-12 w-full max-w-md mx-auto">
                 <AnimatePresence mode="wait">
                     {successId ? renderSuccess() : (
                         step === 1 ? renderStep1TypeSelection() :

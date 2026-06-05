@@ -35,7 +35,7 @@ const Lookbook = () => {
     return (
         <section id="lookbook" className="py-24 bg-[#0a0a0a]">
             <div className="max-w-7xl mx-auto px-6">
-                <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
                     <div>
                         <motion.span
                             initial={{ opacity: 0 }}
@@ -46,7 +46,7 @@ const Lookbook = () => {
                         </motion.span>
                         <h2 className="serif text-4xl md:text-5xl font-bold mt-2">Hairstyle Fit Check</h2>
                     </div>
-                    <p className="max-w-md text-[#a1a1a1] text-sm leading-relaxed">
+                    <p className="max-w-md text-[#a1a1a1] text-sm leading-relaxed md:text-right">
                         Intip portofolio haircut paling clean dan up-to-date dari capster Auro. Dijamin bikin look lo makin stand out dan confidence lo naik 100%!
                     </p>
                 </div>
