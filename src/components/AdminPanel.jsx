@@ -173,6 +173,21 @@ const AdminPanel = () => {
         fetchBookings();
     };
 
+    const deleteBooking = async (booking) => {
+        if (!window.confirm(`Yakin ingin menghapus reservasi atas nama "${booking.customer_name}" secara permanen?`)) return;
+        const { error } = await supabase
+            .from('bookings')
+            .delete()
+            .eq('id', booking.id);
+
+        if (error) {
+            alert('Gagal menghapus reservasi: ' + error.message);
+            return;
+        }
+
+        fetchBookings();
+    };
+
     const getStatusColor = (status) => {
         switch (status) {
             case 'confirmed': return 'text-green-400';
@@ -389,9 +404,9 @@ const AdminPanel = () => {
                                                         <Scissors size={14} />
                                                     </button>
                                                     <button
-                                                        onClick={() => updateStatus(booking, { status: 'cancelled', queue_status: 'skipped' })}
+                                                        onClick={() => deleteBooking(booking)}
                                                         className="p-1 glass-card hover:bg-red-500/20 text-red-500 transition-colors"
-                                                        title="Batalkan Reservasi"
+                                                        title="Hapus Reservasi"
                                                     >
                                                         <X size={14} />
                                                     </button>

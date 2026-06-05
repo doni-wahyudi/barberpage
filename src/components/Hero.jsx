@@ -81,6 +81,12 @@ const Hero = ({ onBooking }) => {
                             Jadwal Capster
                         </button>
                         <button
+                            onClick={() => document.getElementById('leaderboard')?.scrollIntoView({ behavior: 'smooth' })}
+                            className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all w-full sm:w-auto font-medium"
+                        >
+                            🔥 AUROPeeps Flex
+                        </button>
+                        <button
                             onClick={() => document.getElementById('lookbook')?.scrollIntoView({ behavior: 'smooth' })}
                             className="px-8 py-4 border border-[#d4af37]/30 text-white uppercase tracking-widest text-xs hover:bg-[#d4af37]/10 transition-all w-full sm:w-auto"
                         >

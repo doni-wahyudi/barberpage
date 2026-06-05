@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity } from 'lucide-react';
+import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
@@ -95,6 +95,38 @@ const AdminInsights = () => {
         } catch (err) {
             console.error("Error deleting blacklist:", err);
             setBlacklistError(err.message || 'Gagal menghapus.');
+        }
+    };
+
+    const handleDeleteCustomer = async (phone, name) => {
+        if (!window.confirm(`Yakin ingin menghapus pelanggan "${name}" (${phone})? Tindakan ini akan menghapus semua poin reward dan riwayat kunjungan mereka di CRM.`)) return;
+        setLoading(true);
+        try {
+            // 1. Delete point transactions
+            await supabase
+                .from('point_transactions')
+                .delete()
+                .eq('phone_number', phone);
+
+            // 2. Delete customer record
+            const { error } = await supabase
+                .from('customers')
+                .delete()
+                .eq('phone_number', phone);
+
+            if (error) throw error;
+
+            // Update local state
+            const updated = customers.filter(c => c.phone_number !== phone);
+            setCustomers(updated);
+            setFilteredCustomers(updated);
+
+            alert(`Pelanggan "${name}" berhasil dihapus.`);
+        } catch (err) {
+            console.error("Error deleting customer:", err);
+            alert('Gagal menghapus pelanggan: ' + (err.message || 'Terjadi kesalahan.'));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -338,6 +370,7 @@ const AdminInsights = () => {
                                                 <th className="p-5 font-bold text-center">Total Visits</th>
                                                 <th className="p-5 font-bold">Last Visit</th>
                                                 <th className="p-5 font-bold">Preferences</th>
+                                                <th className="p-5 font-bold text-center">Aksi</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -382,11 +415,21 @@ const AdminInsights = () => {
                                                                 </span>
                                                             </div>
                                                         </td>
+                                                        <td className="p-5 text-center">
+                                                            <button
+                                                                onClick={() => handleDeleteCustomer(client.phone_number, client.name)}
+                                                                className="px-3 py-1.5 border border-red-500/50 hover:bg-red-500/10 text-red-400 text-xs font-bold uppercase rounded transition-colors inline-flex items-center justify-center gap-1.5"
+                                                                title="Hapus Pelanggan"
+                                                            >
+                                                                <Trash2 size={12} />
+                                                                Hapus
+                                                            </button>
+                                                        </td>
                                                     </tr>
                                                 ))
                                             ) : (
                                                 <tr>
-                                                    <td colSpan="4" className="text-center p-12 text-[#555] text-sm">
+                                                    <td colSpan="5" className="text-center p-12 text-[#555] text-sm">
                                                         No clients matched your search.
                                                     </td>
                                                 </tr>
