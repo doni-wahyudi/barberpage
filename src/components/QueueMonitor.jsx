@@ -442,7 +442,7 @@ const QueueMonitor = () => {
                                                 Dapatkan tambahan <strong>{appSettings?.points_per_google_review || 10} Points</strong> dengan menyalin ulasan Anda ke Google Maps kami.
                                             </p>
                                             <a
-                                                href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
+                                                href="https://maps.app.goo.gl/6d7BJJDKbcAukKPK8"
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={handleGoogleClick}

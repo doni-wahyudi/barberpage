@@ -110,7 +110,7 @@ const Testimonials = () => {
                     <div className="mt-12 text-center border-t border-[#d4af37]/10 pt-8">
                         <p className="text-[#a1a1a1] text-sm mb-4">Pernah glow up di Auro?</p>
                         <a
-                            href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
+                            href="https://maps.app.goo.gl/6d7BJJDKbcAukKPK8"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 gold-button !py-3 !px-8 text-sm"

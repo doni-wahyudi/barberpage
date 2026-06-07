@@ -69,12 +69,12 @@ const Location = () => {
                                 <div>
                                     <h4 className="font-bold text-white mb-1 uppercase tracking-widest text-sm">Auro Headquarters</h4>
                                     <p className="text-[#a1a1a1] text-sm leading-relaxed">
-                                        Jl. Abdul Muis No.41, Gedong Meneng<br />
+                                        Jl. Abdul Muis No.40, Gedong Meneng<br />
                                         Kec. Rajabasa, Kota Bandar Lampung<br />
                                         Lampung 35141
                                     </p>
                                     <a
-                                        href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
+                                        href="https://maps.app.goo.gl/6d7BJJDKbcAukKPK8"
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="inline-flex items-center gap-2 text-[#d4af37] text-xs mt-3 uppercase tracking-widest font-bold hover:underline"
@@ -124,7 +124,7 @@ const Location = () => {
                         <div className="aspect-video w-full glass-card overflow-hidden group relative">
                             {/* Google Maps Embed */}
                             <iframe
-                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15888.807354673673!2d105.2348!3d-5.3852!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e40db0366b72fa1%3A0xeaecc742898c1995!2sJl.%20Abdul%20Muis%20No.41%2C%20Gedong%20Meneng%2C%20Kec.%20Rajabasa%2C%20Kota%20Bandar%20Lampung%2C%20Lampung%2035141!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15888.807354673673!2d105.2348!3d-5.3852!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e40db0366b72fa1%3A0xeaecc742898c1995!2sJl.%20Abdul%20Muis%20No.40%2C%20Gedong%20Meneng%2C%20Kec.%20Rajabasa%2C%20Kota%20Bandar%20Lampung%2C%20Lampung%2035141!5e0!3m2!1sen!2sid!4v1700000000000!5m2!1sen!2sid"
                                 width="100%"
                                 height="100%"
                                 style={{ border: 0, filter: 'grayscale(100%) invert(90%) contrast(80%) hue-rotate(180deg)', mixBlendMode: 'luminosity' }}
@@ -137,7 +137,7 @@ const Location = () => {
                             {/* Overlay with CTA */}
                             <div className="absolute inset-0 bg-black/50 group-hover:bg-black/30 transition-all duration-500 z-10 flex items-center justify-center pointer-events-none">
                                 <a
-                                    href="https://maps.app.goo.gl/qekLjzMcHjg8KhVf7"
+                                    href="https://maps.app.goo.gl/6d7BJJDKbcAukKPK8"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="gold-button !text-xs pointer-events-auto"

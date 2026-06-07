@@ -225,7 +225,7 @@ const AdminPanel = () => {
         if (type === 'remind') {
             message = `Halo ${name}, pengingat dari Auro Barbershop. Jadwal reservasi Anda adalah hari ini pukul ${time} untuk layanan ${service}. Kami tunggu kedatangannya ya! 🙏✂️`;
         } else if (type === 'followup') {
-            message = `Halo ${name}, terima kasih sudah mampir ke Auro Barbershop hari ini! Gimana hasilnya? Kalau suka, bantu kami dengan rating di sini ya: https://maps.app.goo.gl/aurobarber. Sampai jumpa lagi! 🤩💈`;
+            message = `Halo ${name}, terima kasih sudah mampir ke Auro Barbershop hari ini! Gimana hasilnya? Kalau suka, bantu kami dengan rating di sini ya: https://maps.app.goo.gl/6d7BJJDKbcAukKPK8. Sampai jumpa lagi! 🤩💈`;
         }
 
         const url = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
@@ -426,162 +426,162 @@ const AdminPanel = () => {
                         </table>
                     </div>
                 </div>
-            {/* Edit Booking Modal */}
-            <AnimatePresence>
-                {editingBooking && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setEditingBooking(null)}
-                            className="absolute inset-0 bg-black/85 backdrop-blur-sm"
-                        />
+                {/* Edit Booking Modal */}
+                <AnimatePresence>
+                    {editingBooking && (
+                        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setEditingBooking(null)}
+                                className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+                            />
 
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="relative w-full max-w-lg glass-card p-6 md:p-8 shadow-2xl overflow-hidden border border-[#d4af37]/30 bg-[#0c0c0c]"
-                        >
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="serif text-2xl font-bold text-[#d4af37]">Ubah Rincian Booking</h3>
-                                <button onClick={() => setEditingBooking(null)} className="text-[#a1a1a1] hover:text-[#d4af37] transition-colors">
-                                    <X size={24} />
-                                </button>
-                            </div>
-
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Nama Pelanggan</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
-                                        value={editingBooking.customer_name || ''}
-                                        onChange={(e) => setEditingBooking({ ...editingBooking, customer_name: e.target.value })}
-                                    />
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                                animate={{ scale: 1, opacity: 1, y: 0 }}
+                                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                                className="relative w-full max-w-lg glass-card p-6 md:p-8 shadow-2xl overflow-hidden border border-[#d4af37]/30 bg-[#0c0c0c]"
+                            >
+                                <div className="flex justify-between items-center mb-6">
+                                    <h3 className="serif text-2xl font-bold text-[#d4af37]">Ubah Rincian Booking</h3>
+                                    <button onClick={() => setEditingBooking(null)} className="text-[#a1a1a1] hover:text-[#d4af37] transition-colors">
+                                        <X size={24} />
+                                    </button>
                                 </div>
 
-                                <div>
-                                    <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Nomor HP</label>
-                                    <input
-                                        type="tel"
-                                        className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
-                                        value={editingBooking.phone_number || ''}
-                                        onChange={(e) => setEditingBooking({ ...editingBooking, phone_number: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-4">
                                     <div>
-                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Tanggal</label>
+                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Nama Pelanggan</label>
                                         <input
-                                            type="date"
+                                            type="text"
                                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
-                                            style={{ colorScheme: 'dark' }}
-                                            value={editingBooking.booking_date || ''}
-                                            onChange={(e) => setEditingBooking({ ...editingBooking, booking_date: e.target.value })}
+                                            value={editingBooking.customer_name || ''}
+                                            onChange={(e) => setEditingBooking({ ...editingBooking, customer_name: e.target.value })}
                                         />
                                     </div>
+
                                     <div>
-                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Jam</label>
+                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Nomor HP</label>
                                         <input
-                                            type="time"
+                                            type="tel"
                                             className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
-                                            style={{ colorScheme: 'dark' }}
-                                            value={editingBooking.booking_time ? editingBooking.booking_time.substring(0, 5) : ''}
-                                            onChange={(e) => setEditingBooking({ ...editingBooking, booking_time: e.target.value })}
+                                            value={editingBooking.phone_number || ''}
+                                            onChange={(e) => setEditingBooking({ ...editingBooking, phone_number: e.target.value })}
                                         />
                                     </div>
-                                </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Layanan (Item)</label>
-                                        <select
-                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white appearance-none"
-                                            value={editingBooking.service_type || ''}
-                                            onChange={(e) => {
-                                                const serviceName = e.target.value;
-                                                const serviceObj = availableServices.find(s => s.name === serviceName);
-                                                const price = serviceObj ? serviceObj.price : 0;
-                                                let grandTotal = price - (editingBooking.voucher_discount || 0);
-                                                if (grandTotal < 0) grandTotal = 0;
-                                                setEditingBooking({
-                                                    ...editingBooking,
-                                                    service_type: serviceName,
-                                                    total_price: grandTotal
-                                                });
-                                            }}
-                                        >
-                                            {availableServices.map(s => (
-                                                <option key={s.name} value={s.name}>{s.name} (Rp {s.price.toLocaleString('id-ID')})</option>
-                                            ))}
-                                        </select>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Tanggal</label>
+                                            <input
+                                                type="date"
+                                                className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                                style={{ colorScheme: 'dark' }}
+                                                value={editingBooking.booking_date || ''}
+                                                onChange={(e) => setEditingBooking({ ...editingBooking, booking_date: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Jam</label>
+                                            <input
+                                                type="time"
+                                                className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white"
+                                                style={{ colorScheme: 'dark' }}
+                                                value={editingBooking.booking_time ? editingBooking.booking_time.substring(0, 5) : ''}
+                                                onChange={(e) => setEditingBooking({ ...editingBooking, booking_time: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Kapster</label>
-                                        <select
-                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white appearance-none"
-                                            value={editingBooking.barber_name || ''}
-                                            onChange={(e) => setEditingBooking({ ...editingBooking, barber_name: e.target.value })}
-                                        >
-                                            {availableBarbers.map(b => (
-                                                <option key={b} value={b}>{b}</option>
-                                            ))}
-                                        </select>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Layanan (Item)</label>
+                                            <select
+                                                className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white appearance-none"
+                                                value={editingBooking.service_type || ''}
+                                                onChange={(e) => {
+                                                    const serviceName = e.target.value;
+                                                    const serviceObj = availableServices.find(s => s.name === serviceName);
+                                                    const price = serviceObj ? serviceObj.price : 0;
+                                                    let grandTotal = price - (editingBooking.voucher_discount || 0);
+                                                    if (grandTotal < 0) grandTotal = 0;
+                                                    setEditingBooking({
+                                                        ...editingBooking,
+                                                        service_type: serviceName,
+                                                        total_price: grandTotal
+                                                    });
+                                                }}
+                                            >
+                                                {availableServices.map(s => (
+                                                    <option key={s.name} value={s.name}>{s.name} (Rp {s.price.toLocaleString('id-ID')})</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="text-xs uppercase tracking-widest text-[#a1a1a1] mb-1.5 block">Kapster</label>
+                                            <select
+                                                className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 text-sm focus:outline-none focus:border-[#d4af37] transition-colors text-white appearance-none"
+                                                value={editingBooking.barber_name || ''}
+                                                onChange={(e) => setEditingBooking({ ...editingBooking, barber_name: e.target.value })}
+                                            >
+                                                {availableBarbers.map(b => (
+                                                    <option key={b} value={b}>{b}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-3 bg-[#141414] rounded border border-[#d4af37]/10 flex justify-between items-center text-xs font-mono">
+                                        <span className="text-[#a1a1a1]">Total Harga (Setelah Potongan):</span>
+                                        <span className="text-[#d4af37] font-bold text-sm">
+                                            Rp {editingBooking.total_price ? editingBooking.total_price.toLocaleString('id-ID') : 0}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="p-3 bg-[#141414] rounded border border-[#d4af37]/10 flex justify-between items-center text-xs font-mono">
-                                    <span className="text-[#a1a1a1]">Total Harga (Setelah Potongan):</span>
-                                    <span className="text-[#d4af37] font-bold text-sm">
-                                        Rp {editingBooking.total_price ? editingBooking.total_price.toLocaleString('id-ID') : 0}
-                                    </span>
+                                <div className="flex gap-4 mt-8">
+                                    <button
+                                        onClick={() => setEditingBooking(null)}
+                                        className="flex-1 py-3 px-6 bg-transparent border border-[#333] hover:border-red-500/50 hover:text-red-500 transition-colors text-xs uppercase tracking-widest rounded text-[#a1a1a1] font-bold"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            const { error } = await supabase
+                                                .from('bookings')
+                                                .update({
+                                                    customer_name: editingBooking.customer_name,
+                                                    phone_number: editingBooking.phone_number,
+                                                    booking_date: editingBooking.booking_date,
+                                                    booking_time: editingBooking.booking_time,
+                                                    service_type: editingBooking.service_type,
+                                                    barber_name: editingBooking.barber_name,
+                                                    total_price: editingBooking.total_price
+                                                })
+                                                .eq('id', editingBooking.id);
+
+                                            if (error) {
+                                                alert('Gagal menyimpan perubahan: ' + error.message);
+                                                return;
+                                            }
+                                            setEditingBooking(null);
+                                            fetchBookings();
+                                        }}
+                                        className="flex-1 gold-button py-3 px-6 text-xs font-bold uppercase tracking-widest text-center"
+                                    >
+                                        Simpan Perubahan
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className="flex gap-4 mt-8">
-                                <button
-                                    onClick={() => setEditingBooking(null)}
-                                    className="flex-1 py-3 px-6 bg-transparent border border-[#333] hover:border-red-500/50 hover:text-red-500 transition-colors text-xs uppercase tracking-widest rounded text-[#a1a1a1] font-bold"
-                                >
-                                    Batal
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        const { error } = await supabase
-                                            .from('bookings')
-                                            .update({
-                                                customer_name: editingBooking.customer_name,
-                                                phone_number: editingBooking.phone_number,
-                                                booking_date: editingBooking.booking_date,
-                                                booking_time: editingBooking.booking_time,
-                                                service_type: editingBooking.service_type,
-                                                barber_name: editingBooking.barber_name,
-                                                total_price: editingBooking.total_price
-                                            })
-                                            .eq('id', editingBooking.id);
-
-                                        if (error) {
-                                            alert('Gagal menyimpan perubahan: ' + error.message);
-                                            return;
-                                        }
-                                        setEditingBooking(null);
-                                        fetchBookings();
-                                    }}
-                                    className="flex-1 gold-button py-3 px-6 text-xs font-bold uppercase tracking-widest text-center"
-                                >
-                                    Simpan Perubahan
-                                </button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                            </motion.div>
+                        </div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
-    </div>
-);
+    );
 };
 
 export default AdminPanel;
