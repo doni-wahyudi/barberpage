@@ -15,7 +15,7 @@ const formatTime12h = (timeStr) => {
     return `${displayH} ${ampm}`;
 };
 
-const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
+const Navbar = ({ onAdminToggle, isAdminView, onBooking, hasPromo = false }) => {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
@@ -87,7 +87,7 @@ const Navbar = ({ onAdminToggle, isAdminView, onBooking }) => {
 
     return (
         <nav
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-md py-4 border-b border-[#d4af37]/20' : 'bg-transparent py-6'
+            className={`fixed left-0 right-0 z-50 transition-all duration-300 ${hasPromo ? 'top-10' : 'top-0'} ${scrolled ? 'bg-[#0a0a0a]/90 backdrop-blur-md py-4 border-b border-[#d4af37]/20' : 'bg-transparent py-6'
                 } ${!isVisible ? '-translate-y-full opacity-0 lg:translate-y-0 lg:opacity-100' : 'translate-y-0 opacity-100'}`}
         >
             <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">

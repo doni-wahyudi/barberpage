@@ -31,10 +31,16 @@ import FeedbackButton from './components/FeedbackButton';
 import RefreshButton from './components/RefreshButton';
 import Leaderboard from './components/Leaderboard';
 import GalleryPage from './components/GalleryPage';
+import PromoTicker from './components/PromoTicker';
+import { supabase } from './lib/supabaseClient';
 
 function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [isBookingOpen, setIsBookingOpen] = useState(false);
+    const [activeDiscounts, setActiveDiscounts] = useState([]);
+    const [isPromoDismissed, setIsPromoDismissed] = useState(
+        () => sessionStorage.getItem('promoTickerDismissed') === 'true'
+    );
 
     useEffect(() => {
         // Simulate initial loading for a premium feel
@@ -59,6 +65,25 @@ function App() {
             }
         }
     }, [isLoading]);
+
+    useEffect(() => {
+        const fetchActiveDiscounts = async () => {
+            const { data, error } = await supabase
+                .from('discounts')
+                .select('id, name, type, value, min_purchase')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Failed to fetch active discounts:', error);
+                return;
+            }
+
+            setActiveDiscounts(data || []);
+        };
+
+        fetchActiveDiscounts();
+    }, []);
     const [bookingData, setBookingData] = useState(null);
 
     // Pass open modal trigger to child components where needed
@@ -70,6 +95,12 @@ function App() {
         setBookingData(data);
         setIsBookingOpen(true);
     };
+    const closePromoTicker = () => {
+        sessionStorage.setItem('promoTickerDismissed', 'true');
+        setIsPromoDismissed(true);
+    };
+
+    const visibleDiscounts = isPromoDismissed ? [] : activeDiscounts;
 
     return (
         <div className="relative min-h-screen bg-[#0a0a0a] text-white">
@@ -82,7 +113,8 @@ function App() {
                     <Routes>
                         <Route path="/" element={
                             <>
-                                <Navbar onBooking={openBooking} />
+                                <PromoTicker discounts={visibleDiscounts} onClose={closePromoTicker} />
+                                <Navbar onBooking={openBooking} hasPromo={visibleDiscounts.length > 0} />
                                 <main>
                                     <Hero onBooking={openBooking} />
                                     <Services onSelectService={(service) => openBookingWithData({ service })} />

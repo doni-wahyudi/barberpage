@@ -115,3 +115,113 @@ h4,
 .fade-in {
   animation: fadeIn 1s ease-out forwards;
 }
+
+@keyframes promoTicker {
+  from {
+    transform: translateX(100vw);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+.promo-ticker {
+  background:
+    linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.35) 38%, transparent 56%) 0 0 / 220% 100%,
+    linear-gradient(90deg, #c99b18 0%, #f1d15c 48%, #d4af37 100%);
+  animation: promoShine 5s ease-in-out infinite;
+}
+
+@keyframes promoShine {
+  0%,
+  55% {
+    background-position: 120% 0, 0 0;
+  }
+
+  100% {
+    background-position: -120% 0, 0 0;
+  }
+}
+
+.promo-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: promoTicker 22s linear infinite;
+  will-change: transform;
+}
+
+.promo-ticker-badge {
+  border: 1px solid rgba(10, 10, 10, 0.65);
+  border-radius: 999px;
+  background: #0a0a0a;
+  color: #f1d592;
+  padding: 0.24rem 0.55rem;
+  font-size: 0.58rem;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.18);
+}
+
+.promo-ticker-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  background: #0a0a0a;
+  color: #f1d592;
+  padding: 0.38rem 0.75rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  box-shadow: 0 3px 10px rgba(10, 10, 10, 0.22);
+  animation: promoCtaPulse 1.8s ease-in-out infinite;
+}
+
+.promo-ticker-cta-arrow {
+  display: inline-block;
+  font-size: 0.9rem;
+  line-height: 1;
+  animation: promoCtaArrow 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes promoCtaPulse {
+  0%,
+  100% {
+    box-shadow: 0 3px 10px rgba(10, 10, 10, 0.22);
+  }
+
+  50% {
+    box-shadow: 0 3px 14px rgba(10, 10, 10, 0.42), 0 0 0 3px rgba(10, 10, 10, 0.12);
+  }
+}
+
+@keyframes promoCtaArrow {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(4px);
+  }
+}
+
+.promo-ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-ticker {
+    animation: none;
+  }
+
+  .promo-ticker-track {
+    width: 100%;
+    animation: none;
+    overflow-x: auto;
+  }
+
+  .promo-ticker-cta,
+  .promo-ticker-cta-arrow {
+    animation: none;
+  }
+}

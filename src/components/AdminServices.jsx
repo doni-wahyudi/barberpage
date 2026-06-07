@@ -107,7 +107,7 @@ const AdminServices = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingService(null);
-        setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0' });
+        setFormData({ name: '', price: '', description: '', image_url: '', is_redeemable: false, points_required: '0', category_id: '' });
         setImageFile(null);
     };
 
@@ -139,7 +139,7 @@ const AdminServices = () => {
                 finalImageUrl = publicUrl;
             } catch (error) {
                 console.error('Error uploading image:', error);
-                alert('Gagal mengunggah gambar. Pastikan bucket "images" tersedia dan publik.');
+                alert(`Gagal mengunggah gambar: ${error.message || 'Pastikan bucket "services" tersedia dan dapat diakses.'}`);
                 setIsSubmitting(false);
                 return;
             }
@@ -152,7 +152,7 @@ const AdminServices = () => {
             image_url: finalImageUrl || null,
             is_redeemable: formData.is_redeemable,
             points_required: parseInt(formData.points_required, 10) || 0,
-            category_id: formData.category_id || null,
+            category_id: formData.category_id ? Number(formData.category_id) : null,
             updated_at: new Date().toISOString()
         };
 
@@ -173,7 +173,7 @@ const AdminServices = () => {
             handleCloseModal();
         } catch (error) {
             console.error('Error saving service:', error);
-            alert('Gagal menyimpan layanan.');
+            alert(`Gagal menyimpan layanan: ${error.message || 'Terjadi kesalahan tidak diketahui.'}`);
         } finally {
             setIsSubmitting(false);
         }
