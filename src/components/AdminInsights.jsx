@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity, Trash2 } from 'lucide-react';
+import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity, Trash2, Edit, X, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
@@ -13,6 +13,15 @@ const AdminInsights = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [stats, setStats] = useState({ revenueData: [], serviceData: [], barberData: [] });
+
+    // Edit Customer modal states
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingCustomer, setEditingCustomer] = useState(null);
+    const [editForm, setEditForm] = useState({});
+    const [editError, setEditError] = useState('');
+    const [editLoading, setEditLoading] = useState(false);
+    const [barbersList, setBarbersList] = useState([]);
+    const [servicesList, setServicesList] = useState([]);
 
     // Blacklist states
     const [blacklist, setBlacklist] = useState([]);
@@ -45,6 +54,23 @@ const AdminInsights = () => {
             fetchBlacklist();
         }
     }, [activeTab]);
+
+    // Fetch barbers and services for the edit dropdowns
+    useEffect(() => {
+        const fetchDropdownData = async () => {
+            try {
+                const [{ data: barbers }, { data: services }] = await Promise.all([
+                    supabase.from('barbers').select('id, name').eq('is_active', true).order('name'),
+                    supabase.from('services').select('id, name').order('name')
+                ]);
+                setBarbersList(barbers || []);
+                setServicesList(services || []);
+            } catch (err) {
+                console.error('Error fetching dropdown data:', err);
+            }
+        };
+        fetchDropdownData();
+    }, []);
 
     const handleAddBlacklist = async (e) => {
         e.preventDefault();
@@ -98,6 +124,55 @@ const AdminInsights = () => {
         }
     };
 
+    const openEditModal = (client) => {
+        setEditingCustomer(client);
+        setEditForm({
+            name: client.name || '',
+            points: client.points ?? 0,
+            total_visits: client.total_visits ?? 0,
+            special_mark: client.special_mark || '',
+            favorite_barber: client.favorite_barber || '',
+            favorite_service: client.favorite_service || '',
+        });
+        setEditError('');
+        setIsEditModalOpen(true);
+    };
+
+    const handleEditSave = async (e) => {
+        e.preventDefault();
+        setEditLoading(true);
+        setEditError('');
+        try {
+            const payload = {
+                name: editForm.name,
+                points: Number(editForm.points) || 0,
+                total_visits: Number(editForm.total_visits) || 0,
+                special_mark: editForm.special_mark || null,
+                favorite_barber: editForm.favorite_barber || null,
+                favorite_service: editForm.favorite_service || null,
+                updated_at: new Date().toISOString(),
+            };
+            const { error } = await supabase
+                .from('customers')
+                .update(payload)
+                .eq('phone_number', editingCustomer.phone_number);
+            if (error) throw error;
+
+            // Update local state immediately
+            const updatedList = customers.map(c =>
+                c.phone_number === editingCustomer.phone_number ? { ...c, ...payload } : c
+            );
+            setCustomers(updatedList);
+            setFilteredCustomers(updatedList);
+            setIsEditModalOpen(false);
+        } catch (err) {
+            console.error('Error updating customer:', err);
+            setEditError(err.message || 'Gagal menyimpan perubahan.');
+        } finally {
+            setEditLoading(false);
+        }
+    };
+
     const handleDeleteCustomer = async (phone, name) => {
         if (!window.confirm(`Yakin ingin menghapus pelanggan "${name}" (${phone})? Tindakan ini akan menghapus semua poin reward dan riwayat kunjungan mereka di CRM.`)) return;
         setLoading(true);
@@ -134,34 +209,58 @@ const AdminInsights = () => {
         const fetchInsights = async () => {
             setLoading(true);
             try {
-                // 1. Fetch all unique customers
+                // 1. Fetch all customers
                 const { data: customerData, error: custError } = await supabase
                     .from('customers')
-                    .select('*')
-                    .order('total_visits', { ascending: false });
+                    .select('*');
 
                 if (custError) throw custError;
-                setCustomers(customerData || []);
-                setFilteredCustomers(customerData || []);
 
-                // 2. Fetch recent bookings for visual analytics (last 30 days)
-                const thirtyDaysAgo = new Date();
-                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-                const { data: bookingData, error: bookError } = await supabase
+                // 2. Fetch ALL completed bookings (for customer stats + charts)
+                const { data: allBookings, error: bookError } = await supabase
                     .from('bookings')
-                    .select('*')
+                    .select('phone_number, booking_date, service_type, barber_name, total_price')
                     .eq('status', 'completed')
-                    .gte('booking_date', thirtyDaysAgo.toISOString().split('T')[0]);
+                    .order('booking_date', { ascending: true });
 
                 if (bookError) throw bookError;
 
-                // Process data for charts
+                // 3. Build per-customer stats from ALL completed bookings
+                const statsMap = {};
+                (allBookings || []).forEach(b => {
+                    const phone = b.phone_number;
+                    if (!phone) return;
+                    if (!statsMap[phone]) {
+                        statsMap[phone] = { total_visits: 0, last_visit: null };
+                    }
+                    statsMap[phone].total_visits += 1;
+                    if (!statsMap[phone].last_visit || b.booking_date > statsMap[phone].last_visit) {
+                        statsMap[phone].last_visit = b.booking_date;
+                    }
+                });
+
+                // 4. Merge computed stats into customers, prefer booking-derived values
+                const enriched = (customerData || []).map(c => ({
+                    ...c,
+                    total_visits: statsMap[c.phone_number]?.total_visits ?? c.total_visits ?? 0,
+                    last_visit: statsMap[c.phone_number]?.last_visit ?? c.last_visit ?? null,
+                }));
+
+                // Sort by computed visits descending
+                enriched.sort((a, b) => (b.total_visits || 0) - (a.total_visits || 0));
+                setCustomers(enriched);
+                setFilteredCustomers(enriched);
+
+                // 5. Chart data: filter to last 30 days
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                const cutoff = thirtyDaysAgo.toISOString().split('T')[0];
+
                 const revenueMap = {};
                 const serviceMap = {};
                 const barberMap = {};
 
-                (bookingData || []).forEach(b => {
+                (allBookings || []).filter(b => b.booking_date >= cutoff).forEach(b => {
                     const date = b.booking_date;
                     revenueMap[date] = (revenueMap[date] || 0) + (b.total_price || 0);
                     serviceMap[b.service_type] = (serviceMap[b.service_type] || 0) + 1;
@@ -210,7 +309,8 @@ const AdminInsights = () => {
     }, [searchTerm, customers]);
 
     const formatDate = (dateStr) => {
-        return new Date(dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        if (!dateStr) return 'Belum ada';
+        return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     return (
@@ -416,14 +516,24 @@ const AdminInsights = () => {
                                                             </div>
                                                         </td>
                                                         <td className="p-5 text-center">
-                                                            <button
-                                                                onClick={() => handleDeleteCustomer(client.phone_number, client.name)}
-                                                                className="px-3 py-1.5 border border-red-500/50 hover:bg-red-500/10 text-red-400 text-xs font-bold uppercase rounded transition-colors inline-flex items-center justify-center gap-1.5"
-                                                                title="Hapus Pelanggan"
-                                                            >
-                                                                <Trash2 size={12} />
-                                                                Hapus
-                                                            </button>
+                                                            <div className="flex items-center justify-center gap-2">
+                                                                <button
+                                                                    onClick={() => openEditModal(client)}
+                                                                    className="px-3 py-1.5 border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] text-xs font-bold uppercase rounded transition-colors inline-flex items-center justify-center gap-1.5"
+                                                                    title="Edit Pelanggan"
+                                                                >
+                                                                    <Edit size={12} />
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleDeleteCustomer(client.phone_number, client.name)}
+                                                                    className="px-3 py-1.5 border border-red-500/50 hover:bg-red-500/10 text-red-400 text-xs font-bold uppercase rounded transition-colors inline-flex items-center justify-center gap-1.5"
+                                                                    title="Hapus Pelanggan"
+                                                                >
+                                                                    <Trash2 size={12} />
+                                                                    Hapus
+                                                                </button>
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 ))
@@ -536,6 +646,126 @@ const AdminInsights = () => {
                     </div>
                 )}
             </div>
+
+            {/* Edit Customer Modal */}
+            {isEditModalOpen && editingCustomer && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                    onClick={(e) => { if (e.target === e.currentTarget) setIsEditModalOpen(false); }}
+                >
+                    <div className="bg-[#0f0f0f] border border-[#d4af37]/20 rounded-xl w-full max-w-md shadow-2xl p-6">
+                        <div className="flex items-center justify-between mb-6">
+                            <div>
+                                <h2 className="text-lg font-bold text-white">Edit Pelanggan</h2>
+                                <p className="text-xs text-[#a1a1a1] font-mono mt-0.5">{editingCustomer.phone_number}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsEditModalOpen(false)}
+                                className="text-[#555] hover:text-white transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {editError && (
+                            <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/30 p-2 rounded mb-4">{editError}</p>
+                        )}
+
+                        <form onSubmit={handleEditSave} className="space-y-4">
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider text-[#a1a1a1] mb-1 font-semibold">Nama Lengkap</label>
+                                <input
+                                    type="text"
+                                    required
+                                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#d4af37] text-white"
+                                    value={editForm.name}
+                                    onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider text-[#a1a1a1] mb-1 font-semibold">Poin Reward</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#d4af37] text-white"
+                                        value={editForm.points}
+                                        onChange={(e) => setEditForm(f => ({ ...f, points: e.target.value }))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs uppercase tracking-wider text-[#a1a1a1] mb-1 font-semibold">Total Kunjungan</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#d4af37] text-white"
+                                        value={editForm.total_visits}
+                                        onChange={(e) => setEditForm(f => ({ ...f, total_visits: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider text-[#a1a1a1] mb-1 font-semibold">Gelar / Special Mark</label>
+                                <input
+                                    type="text"
+                                    placeholder="Cth: VIP, Regular, dsb."
+                                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#d4af37] text-white"
+                                    value={editForm.special_mark}
+                                    onChange={(e) => setEditForm(f => ({ ...f, special_mark: e.target.value }))}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider text-[#a1a1a1] mb-1 font-semibold">Kapster Favorit</label>
+                                <select
+                                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#d4af37] text-white"
+                                    value={editForm.favorite_barber}
+                                    onChange={(e) => setEditForm(f => ({ ...f, favorite_barber: e.target.value }))}
+                                >
+                                    <option value="">— Tidak Ada —</option>
+                                    {barbersList.map(b => (
+                                        <option key={b.id} value={b.name}>{b.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs uppercase tracking-wider text-[#a1a1a1] mb-1 font-semibold">Layanan Favorit</label>
+                                <select
+                                    className="w-full bg-[#141414] border border-[#333] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#d4af37] text-white"
+                                    value={editForm.favorite_service}
+                                    onChange={(e) => setEditForm(f => ({ ...f, favorite_service: e.target.value }))}
+                                >
+                                    <option value="">— Tidak Ada —</option>
+                                    {servicesList.map(s => (
+                                        <option key={s.id} value={s.name}>{s.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="flex-1 py-2.5 border border-[#333] hover:border-[#555] text-[#a1a1a1] hover:text-white text-xs font-bold uppercase rounded transition-colors"
+                                >
+                                    Batal
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={editLoading}
+                                    className="flex-1 py-2.5 bg-[#d4af37] hover:bg-[#c4a030] text-black text-xs font-bold uppercase rounded transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+                                >
+                                    {editLoading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                    Simpan
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

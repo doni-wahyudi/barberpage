@@ -885,116 +885,139 @@ const MobileBooking = () => {
 
                     {/* Public Discounts Selection */}
                     {publicDiscounts.length > 0 && (
-                        <div className="bg-[#141414] border border-[#d4af37]/20 rounded-lg p-4 mt-4">
-                            <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block mb-3">
-                                Diskon Tersedia
-                            </span>
-                            <div className="space-y-2">
-                                {publicDiscounts.map((discount) => {
-                                    const isSelected = selectedDiscount?.id === discount.id;
-                                    const minPurchase = discount.min_purchase || 0;
-                                    const deduction = getDiscountDeduction(discount, subtotal);
-                                    const isDisabled = subtotal < minPurchase;
+                        voucherData?.claimId ? (
+                            <div className="bg-[#141414]/90 border border-green-500/20 rounded-lg p-4 mt-4 text-center text-xs text-[#a1a1a1]">
+                                Voucher program sedang digunakan. Hapus voucher untuk memilih diskon publik.
+                            </div>
+                        ) : (
+                            <div className="bg-[#141414] border border-[#d4af37]/20 rounded-lg p-4 mt-4">
+                                <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block mb-3">
+                                    Diskon Tersedia
+                                </span>
+                                <div className="space-y-2">
+                                    {publicDiscounts.map((discount) => {
+                                        const isSelected = selectedDiscount?.id === discount.id;
+                                        const minPurchase = discount.min_purchase || 0;
+                                        const deduction = getDiscountDeduction(discount, subtotal);
+                                        const isDisabled = subtotal < minPurchase;
 
-                                    return (
-                                        <button
-                                            key={discount.id}
-                                            type="button"
-                                            disabled={isDisabled}
-                                            onClick={() => {
-                                                if (isSelected) {
-                                                    setSelectedDiscount(null);
-                                                    setVoucherData(null);
-                                                    setProofFile(null);
-                                                } else {
-                                                    setSelectedDiscount(discount);
-                                                    setVoucherData({
-                                                        discountValue: deduction,
-                                                        programId: discount.name,
-                                                        claimId: null
-                                                    });
-                                                    setVoucherClaimKey(prev => prev + 1);
-                                                    setProofFile(null);
-                                                }
-                                            }}
-                                            className={`w-full p-3 rounded border text-left transition-all flex justify-between items-center ${
-                                                isDisabled ? 'opacity-40 cursor-not-allowed border-[#333]' :
-                                                isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' :
-                                                'bg-[#0d0d0d] border-[#d4af37]/20 hover:border-[#d4af37]/50'
-                                            }`}
-                                        >
-                                            <div>
-                                                <div className="font-bold text-xs uppercase tracking-wider text-white">
-                                                    {discount.name}
-                                                    {discount.requires_proof && (
-                                                        <span className="ml-2 bg-[#d4af37]/20 text-[#d4af37] text-[9px] px-1.5 py-0.5 rounded font-normal uppercase tracking-normal">
-                                                            Upload Bukti
+                                        return (
+                                            <button
+                                                key={discount.id}
+                                                type="button"
+                                                disabled={isDisabled}
+                                                onClick={() => {
+                                                    if (isSelected) {
+                                                        setSelectedDiscount(null);
+                                                        setVoucherData(null);
+                                                        setProofFile(null);
+                                                    } else {
+                                                        setSelectedDiscount(discount);
+                                                        setVoucherData({
+                                                            discountValue: deduction,
+                                                            programId: discount.name,
+                                                            claimId: null
+                                                        });
+                                                        setVoucherClaimKey(prev => prev + 1);
+                                                        setProofFile(null);
+                                                    }
+                                                }}
+                                                className={`w-full p-3 rounded border text-left transition-all flex justify-between items-center ${
+                                                    isDisabled ? 'opacity-40 cursor-not-allowed border-[#333]' :
+                                                    isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' :
+                                                    'bg-[#0d0d0d] border-[#d4af37]/20 hover:border-[#d4af37]/50'
+                                                }`}
+                                            >
+                                                <div>
+                                                    <div className="font-bold text-xs uppercase tracking-wider text-white">
+                                                        {discount.name}
+                                                        {discount.requires_proof && (
+                                                            <span className="ml-2 bg-[#d4af37]/20 text-[#d4af37] text-[9px] px-1.5 py-0.5 rounded font-normal uppercase tracking-normal">
+                                                                Upload Bukti
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="text-[10px] text-[#a1a1a1] mt-0.5">
+                                                        {discount.type === 'percent' ? `${discount.value}%` : `Rp ${discount.value.toLocaleString('id-ID')}`}
+                                                        {minPurchase > 0 && ` · Min. Belanja Rp ${minPurchase.toLocaleString('id-ID')}`}
+                                                    </div>
+                                                </div>
+                                                {!isDisabled && (
+                                                    <div className="text-right">
+                                                        <span className="text-xs font-mono font-bold text-[#d4af37]">
+                                                            -Rp {deduction.toLocaleString('id-ID')}
                                                         </span>
-                                                    )}
-                                                </div>
-                                                <div className="text-[10px] text-[#a1a1a1] mt-0.5">
-                                                    {discount.type === 'percent' ? `${discount.value}%` : `Rp ${discount.value.toLocaleString('id-ID')}`}
-                                                    {minPurchase > 0 && ` · Min. Belanja Rp ${minPurchase.toLocaleString('id-ID')}`}
-                                                </div>
-                                            </div>
-                                            {!isDisabled && (
-                                                <div className="text-right">
-                                                    <span className="text-xs font-mono font-bold text-[#d4af37]">
-                                                        -Rp {deduction.toLocaleString('id-ID')}
-                                                    </span>
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Proof Upload UI */}
+                                {selectedDiscount?.requires_proof && (
+                                    <motion.div 
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        className="mt-4 pt-4 border-t border-[#333]"
+                                    >
+                                        <label className="block text-xs uppercase tracking-widest text-[#d4af37] mb-2 font-bold">
+                                            Unggah Bukti Pendukung *
+                                        </label>
+                                        <p className="text-[10px] text-[#a1a1a1] mb-2">
+                                            Unggah gambar/screenshot (misal: ID mahasiswa, penetapan jabatan, screenshot IG post, dll) sebagai bukti kelayakan diskon.
+                                        </p>
+                                        <div className="flex items-center gap-3">
+                                            {proofFile && (
+                                                <div className="w-12 h-12 rounded overflow-hidden border border-[#d4af37]/30 shrink-0 bg-[#0d0d0d]">
+                                                    <img 
+                                                        src={URL.createObjectURL(proofFile)} 
+                                                        alt="Preview bukti" 
+                                                        className="w-full h-full object-cover"
+                                                    />
                                                 </div>
                                             )}
-                                        </button>
-                                    );
-                                })}
+                                            <input
+                                                required
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => {
+                                                    if (e.target.files && e.target.files[0]) {
+                                                        setProofFile(e.target.files[0]);
+                                                    }
+                                                }}
+                                                className="w-full text-xs text-[#a1a1a1] file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-[#d4af37] file:text-black hover:file:bg-[#b5952f] transition-colors cursor-pointer"
+                                            />
+                                        </div>
+                                    </motion.div>
+                                )}
                             </div>
-
-                            {/* Proof Upload UI */}
-                            {selectedDiscount?.requires_proof && (
-                                <motion.div 
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    className="mt-4 pt-4 border-t border-[#333]"
-                                >
-                                    <label className="block text-xs uppercase tracking-widest text-[#d4af37] mb-2 font-bold">
-                                        Unggah Bukti Pendukung *
-                                    </label>
-                                    <p className="text-[10px] text-[#a1a1a1] mb-2">
-                                        Unggah gambar/screenshot (misal: ID mahasiswa, penetapan jabatan, screenshot IG post, dll) sebagai bukti kelayakan diskon.
-                                    </p>
-                                    <div className="flex items-center gap-3">
-                                        {proofFile && (
-                                            <div className="w-12 h-12 rounded overflow-hidden border border-[#d4af37]/30 shrink-0 bg-[#0d0d0d]">
-                                                <img 
-                                                    src={URL.createObjectURL(proofFile)} 
-                                                    alt="Preview bukti" 
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                        )}
-                                        <input
-                                            required
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={(e) => {
-                                                if (e.target.files && e.target.files[0]) {
-                                                    setProofFile(e.target.files[0]);
-                                                }
-                                            }}
-                                            className="w-full text-xs text-[#a1a1a1] file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-[#d4af37] file:text-black hover:file:bg-[#b5952f] transition-colors cursor-pointer"
-                                        />
-                                    </div>
-                                </motion.div>
-                            )}
-                        </div>
+                        )
                     )}
 
                     <div className="mt-4 mb-2">
-                        <VoucherClaim 
-                            key={voucherClaimKey}
-                            onVoucherApplied={handleVoucherApplied} 
-                            initialPhone={formData.phone} 
-                        />
+                        {selectedDiscount ? (
+                            <div className="bg-[#141414]/90 border border-[#d4af37]/20 rounded-lg p-4 text-center text-xs text-[#a1a1a1] flex items-center justify-between">
+                                <span>Diskon publik aktif: <strong>{selectedDiscount.name}</strong></span>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setSelectedDiscount(null);
+                                        setVoucherData(null);
+                                        setProofFile(null);
+                                    }}
+                                    className="text-xs text-[#d4af37] hover:text-[#f1d592] font-bold uppercase tracking-wider pl-2"
+                                >
+                                    Batalkan
+                                </button>
+                            </div>
+                        ) : (
+                            <VoucherClaim 
+                                key={voucherClaimKey}
+                                onVoucherApplied={handleVoucherApplied} 
+                                initialPhone={formData.phone} 
+                            />
+                        )}
                     </div>
 
                     <div className="text-xs text-[#a1a1a1] text-center my-4">

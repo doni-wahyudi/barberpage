@@ -376,14 +376,29 @@ const VoucherClaim = ({ onVoucherApplied, initialPhone = '' }) => {
                         className="bg-[#141414] border border-green-500/30 rounded-lg p-4 relative overflow-hidden"
                     >
                         <div className="absolute top-0 left-0 w-1 h-full bg-green-500"></div>
-                        <div className="flex items-center gap-3">
-                            <CheckCircle size={24} className="text-green-500 flex-shrink-0" />
-                            <div>
-                                <h4 className="font-bold text-green-500 text-sm">Voucher Berhasil Diklaim!</h4>
-                                <p className="text-xs text-white/80 mt-0.5">
-                                    Diskon {successData.discountType === 'fixed' ? formatCurrency(successData.discountValue) : `${successData.discountValue}%`} dari {successData.programName}
-                                </p>
+                        <div className="flex items-center justify-between gap-3 w-full">
+                            <div className="flex items-center gap-3">
+                                <CheckCircle size={24} className="text-green-500 flex-shrink-0" />
+                                <div>
+                                    <h4 className="font-bold text-green-500 text-sm">Voucher Berhasil Diklaim!</h4>
+                                    <p className="text-xs text-white/80 mt-0.5">
+                                        Diskon {successData.discountType === 'fixed' ? formatCurrency(successData.discountValue) : `${successData.discountValue}%`} dari {successData.programName}
+                                    </p>
+                                </div>
                             </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setStage(0);
+                                    setSuccessData(null);
+                                    setSelectedProgram(null);
+                                    setNpm('');
+                                    onVoucherApplied(null);
+                                }}
+                                className="text-xs text-red-500 hover:text-red-400 font-bold uppercase tracking-wider pl-2 shrink-0 transition-colors"
+                            >
+                                Hapus
+                            </button>
                         </div>
                     </motion.div>
                 )}
