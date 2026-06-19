@@ -386,7 +386,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         initial={{ scale: 0.9, opacity: 0, y: 20 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-lg glass-card p-6 md:p-8 shadow-2xl overflow-hidden"
+                        className="relative w-full max-w-lg glass-card p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh]"
                     >
                         {success ? (
                             <div className="py-12 text-center">
@@ -549,6 +549,28 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             ))}
                                         </select>
                                     </div>
+
+                                    {/* Summary Box */}
+                                    {chosenServiceObj && (
+                                        <div className="p-4 bg-[#141414]/80 backdrop-blur rounded border border-[#d4af37]/15 text-sm space-y-2">
+                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Tanggal</span> <span className="text-white">{formData.date}</span></p>
+                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Waktu</span> <span className="text-[#d4af37] font-mono">{formData.time || '-'}</span></p>
+                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Kapster</span> <span className="text-white">{formData.barber || '-'}</span></p>
+                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Layanan</span> <span className="text-white">{formData.service} ({formatCurrency(chosenServiceObj.price)})</span></p>
+                                            <hr className="border-[#333] my-2" />
+                                            <p className="flex justify-between text-xs"><span className="text-[#a1a1a1]">Subtotal</span> <span className="text-white">{formatCurrency(chosenServiceObj.price)}</span></p>
+                                            {voucherData && (
+                                                <p className="flex justify-between text-xs text-green-500">
+                                                    <span>Diskon ({voucherData.programId})</span>
+                                                    <span>-{formatCurrency(voucherData.discountValue)}</span>
+                                                </p>
+                                            )}
+                                            <p className="flex justify-between font-bold text-base border-t border-[#d4af37]/20 pt-2 text-[#d4af37]">
+                                                <span>Total</span>
+                                                <span>{formatCurrency(Math.max(0, chosenServiceObj.price - (voucherData?.discountValue || 0)))}</span>
+                                            </p>
+                                        </div>
+                                    )}
 
                                     {/* Public Discounts Selection */}
                                     {publicDiscounts.length > 0 && (chosenServiceObj?.price || 0) > 0 && (
