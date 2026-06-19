@@ -27,6 +27,31 @@ const MobileBooking = () => {
     const [appSettings, setAppSettings] = useState(null);
     const [usePoints, setUsePoints] = useState(false);
     const [voucherData, setVoucherData] = useState(null);
+    const [specialMark, setSpecialMark] = useState(null);
+    const [publicDiscounts, setPublicDiscounts] = useState([]);
+    const [selectedDiscount, setSelectedDiscount] = useState(null);
+    const [voucherClaimKey, setVoucherClaimKey] = useState(0);
+    const [proofFile, setProofFile] = useState(null);
+
+    const getDiscountDeduction = (discount, subtotal) => {
+        if (!discount) return 0;
+        if (discount.min_purchase && subtotal < discount.min_purchase) return 0;
+        if (discount.type === 'percent') {
+            return Math.floor((subtotal * discount.value) / 100);
+        } else {
+            return discount.value;
+        }
+    };
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    };
+
+    const handleVoucherApplied = (data) => {
+        setVoucherData(data);
+        setSelectedDiscount(null);
+        setProofFile(null);
+    };
 
     const [formData, setFormData] = useState({
         type: 'service', // 'service' or 'product' (for future)
@@ -135,16 +160,18 @@ const MobileBooking = () => {
         };
 
         const fetchData = async () => {
-            const [productsRes, servicesRes, barbersRes, catsRes] = await Promise.all([
+            const [productsRes, servicesRes, barbersRes, catsRes, discountsRes] = await Promise.all([
                 supabase.from('products').select('*').order('sort_order', { ascending: true }),
                 supabase.from('services').select('*').order('sort_order', { ascending: true }),
                 supabase.from('barbers').select('*').eq('is_active', true),
-                supabase.from('categories').select('*').order('name', { ascending: true })
+                supabase.from('categories').select('*').order('name', { ascending: true }),
+                supabase.from('discounts').select('*').eq('is_active', true).eq('show_public', true)
             ]);
             if (productsRes.data) setProducts(productsRes.data);
             if (servicesRes.data) setServices(servicesRes.data);
             if (barbersRes.data) setBarbers(barbersRes.data);
             if (catsRes.data) setCategories(catsRes.data);
+            if (discountsRes.data) setPublicDiscounts(discountsRes.data);
         };
 
         const fetchLoyaltySettings = async () => {
@@ -152,8 +179,26 @@ const MobileBooking = () => {
             if (settings) setAppSettings(settings);
 
             if (formData.phone) {
-                const { data: customer } = await supabase.from('customers').select('points').eq('phone_number', formData.phone).single();
-                if (customer) setUserPoints(customer.points);
+                const cleanPhone = formData.phone.replace(/[^0-9]/g, '');
+                if (cleanPhone.length >= 9) {
+                    const { data: customer } = await supabase.from('customers')
+                        .select('points, special_mark')
+                        .eq('phone_number', cleanPhone)
+                        .maybeSingle();
+                    if (customer) {
+                        setUserPoints(customer.points || 0);
+                        setSpecialMark(customer.special_mark || null);
+                    } else {
+                        setUserPoints(0);
+                        setSpecialMark(null);
+                    }
+                } else {
+                    setUserPoints(0);
+                    setSpecialMark(null);
+                }
+            } else {
+                setUserPoints(0);
+                setSpecialMark(null);
             }
         };
 
@@ -161,6 +206,41 @@ const MobileBooking = () => {
         fetchData();
         fetchLoyaltySettings();
     }, [formData.date, formData.barber, formData.type, formData.phone]);
+
+    // Sync step changes with browser history
+    useEffect(() => {
+        // Initialize history state on mount
+        if (!window.history.state || window.history.state.step === undefined) {
+            window.history.replaceState({ step: 1 }, '');
+        }
+
+        const handlePopState = (e) => {
+            if (e.state && e.state.step === 'success') {
+                navigate('/');
+            } else if (e.state && e.state.step !== undefined) {
+                setStep(e.state.step);
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [navigate]);
+
+    useEffect(() => {
+        if (successId) {
+            // Replace history state so they can't go back to checkout form steps
+            window.history.replaceState({ step: 'success' }, '');
+            return;
+        }
+
+        // Only push state if we are moving to a step that is different from current history state
+        const historyStep = window.history.state?.step;
+        if (historyStep !== step && historyStep !== 'success') {
+            window.history.pushState({ step }, '');
+        }
+    }, [step, successId]);
 
     // Consistent phone validation
     const validatePhone = (phone) => {
@@ -190,12 +270,11 @@ const MobileBooking = () => {
     };
 
     const handleBack = () => {
-        if (step === 3 && formData.type === 'product') {
-            setStep(1);
-            return;
+        if (step > 1) {
+            window.history.back();
+        } else {
+            navigate('/');
         }
-        if (step > 1) setStep(prev => prev - 1);
-        else navigate('/');
     };
 
     const handleSubmit = async (e) => {
@@ -268,6 +347,38 @@ const MobileBooking = () => {
         if (grandTotal < 0) grandTotal = 0;
 
         try {
+            let uploadedUrl = null;
+            let discountStatus = 'none';
+
+            if (selectedDiscount && selectedDiscount.requires_proof) {
+                if (!proofFile) {
+                    setFormError(`Silakan unggah bukti untuk diskon "${selectedDiscount.name}".`);
+                    setLoading(false);
+                    return;
+                }
+
+                try {
+                    const fileExt = proofFile.name.split('.').pop();
+                    const fileName = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}.${fileExt}`;
+                    const filePath = `${fileName}`;
+                    const { error: uploadError } = await supabase.storage
+                        .from('discount-proofs')
+                        .upload(filePath, proofFile);
+                    if (uploadError) throw uploadError;
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('discount-proofs')
+                        .getPublicUrl(filePath);
+                    uploadedUrl = publicUrl;
+                    discountStatus = 'pending';
+                } catch (uploadErr) {
+                    console.error('Error uploading proof:', uploadErr);
+                    setFormError('Gagal mengunggah gambar bukti. Silakan coba lagi.');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             if (formData.type === 'service') {
                 // Double booking check
                 const { data: existing } = await supabase
@@ -302,7 +413,9 @@ const MobileBooking = () => {
                         status: 'pending',
                         total_price: grandTotal,
                         voucher_discount: voucherData ? voucherData.discountValue : 0,
-                        voucher_program: voucherData ? voucherData.programId : null
+                        voucher_program: voucherData ? voucherData.programId : null,
+                        proof_url: uploadedUrl,
+                        discount_status: discountStatus
                     }])
                     .select();
 
@@ -345,7 +458,9 @@ const MobileBooking = () => {
                         booking_date: new Date().toISOString().split('T')[0],
                         booking_time: getNowTimeStr(),
                         status: 'pending',
-                        total_price: grandTotal
+                        total_price: grandTotal,
+                        proof_url: uploadedUrl,
+                        discount_status: discountStatus
                     }])
                     .select();
 
@@ -625,6 +740,19 @@ const MobileBooking = () => {
     );
 
     const renderStep4Contact = () => {
+        // Calculate subtotal
+        let basePrice = 0;
+        if (formData.type === 'service' && formData.service) {
+            const chosenServiceObj = services.find(s => s.name === formData.service);
+            if (chosenServiceObj) basePrice = chosenServiceObj.price;
+        }
+        let addonPrice = 0;
+        formData.addons.forEach(addonName => {
+            const product = products.find(p => p.name === addonName);
+            if (product) addonPrice += product.price;
+        });
+        const subtotal = basePrice + addonPrice;
+
         // Calculate redeemable options right before rendering step 4
         let bestRedeemableItem = null;
         let highestPrice = -1;
@@ -682,20 +810,46 @@ const MobileBooking = () => {
                         />
                     </div>
 
-                    <div className="p-4 bg-[#141414] rounded border border-[#d4af37]/10 mt-6 text-sm">
+                    {specialMark && (
+                        <motion.div 
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="p-4 bg-gradient-to-r from-[#d4af37]/20 to-transparent border border-[#d4af37]/40 rounded-lg flex items-center gap-3 mt-2"
+                        >
+                            <span className="text-xl">✨</span>
+                            <div>
+                                <p className="text-xs text-[#a1a1a1] uppercase tracking-wider">Pelanggan Spesial</p>
+                                <p className="text-sm font-bold text-[#d4af37] tracking-wide uppercase">{specialMark}</p>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    <div className="p-4 bg-[#141414] rounded border border-[#d4af37]/10 mt-6 text-sm space-y-2">
                         {formData.type === 'service' ? (
                             <>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Tanggal</span> <span>{formData.date}</span></p>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Waktu</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Kapster</span> <span>{formData.barber}</span></p>
-                                <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Layanan</span> <span>{formData.service}</span></p>
+                                <p className="flex justify-between"><span className="text-[#a1a1a1]">Tanggal</span> <span>{formData.date}</span></p>
+                                <p className="flex justify-between"><span className="text-[#a1a1a1]">Waktu</span> <span className="text-[#d4af37] font-mono">{formData.time}</span></p>
+                                <p className="flex justify-between"><span className="text-[#a1a1a1]">Kapster</span> <span>{formData.barber}</span></p>
+                                <p className="flex justify-between"><span className="text-[#a1a1a1]">Layanan</span> <span>{formData.service} ({formatCurrency(basePrice)})</span></p>
                             </>
                         ) : (
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">Pesanan</span> <span className="text-[#d4af37] font-bold">Ambil di Toko</span></p>
+                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Pesanan</span> <span className="text-[#d4af37] font-bold">Ambil di Toko</span></p>
                         )}
                         {(formData.addons || []).length > 0 && (
-                            <p className="flex justify-between mb-2"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Produk' : 'Tambahan'}</span> <span className="text-right">{formData.addons.join(', ')}</span></p>
+                            <p className="flex justify-between"><span className="text-[#a1a1a1]">{formData.type === 'product' ? 'Produk' : 'Tambahan'}</span> <span className="text-right text-xs max-w-[200px]">{formData.addons.join(', ')} ({formatCurrency(addonPrice)})</span></p>
                         )}
+                        <hr className="border-[#333] my-2" />
+                        <p className="flex justify-between text-xs"><span className="text-[#a1a1a1]">Subtotal</span> <span>{formatCurrency(subtotal)}</span></p>
+                        {voucherData && (
+                            <p className="flex justify-between text-xs text-green-500">
+                                <span>Diskon ({voucherData.programId})</span>
+                                <span>-{formatCurrency(voucherData.discountValue)}</span>
+                            </p>
+                        )}
+                        <p className="flex justify-between font-bold text-base border-t border-[#d4af37]/20 pt-2 text-[#d4af37]">
+                            <span>Total</span>
+                            <span>{formatCurrency(Math.max(0, subtotal - (voucherData?.discountValue || 0)))}</span>
+                        </p>
                     </div>
 
                     {/* Loyalty Point Redemption Section */}
@@ -729,9 +883,116 @@ const MobileBooking = () => {
                         </div>
                     )}
 
+                    {/* Public Discounts Selection */}
+                    {publicDiscounts.length > 0 && (
+                        <div className="bg-[#141414] border border-[#d4af37]/20 rounded-lg p-4 mt-4">
+                            <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block mb-3">
+                                Diskon Tersedia
+                            </span>
+                            <div className="space-y-2">
+                                {publicDiscounts.map((discount) => {
+                                    const isSelected = selectedDiscount?.id === discount.id;
+                                    const minPurchase = discount.min_purchase || 0;
+                                    const deduction = getDiscountDeduction(discount, subtotal);
+                                    const isDisabled = subtotal < minPurchase;
+
+                                    return (
+                                        <button
+                                            key={discount.id}
+                                            type="button"
+                                            disabled={isDisabled}
+                                            onClick={() => {
+                                                if (isSelected) {
+                                                    setSelectedDiscount(null);
+                                                    setVoucherData(null);
+                                                    setProofFile(null);
+                                                } else {
+                                                    setSelectedDiscount(discount);
+                                                    setVoucherData({
+                                                        discountValue: deduction,
+                                                        programId: discount.name,
+                                                        claimId: null
+                                                    });
+                                                    setVoucherClaimKey(prev => prev + 1);
+                                                    setProofFile(null);
+                                                }
+                                            }}
+                                            className={`w-full p-3 rounded border text-left transition-all flex justify-between items-center ${
+                                                isDisabled ? 'opacity-40 cursor-not-allowed border-[#333]' :
+                                                isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' :
+                                                'bg-[#0d0d0d] border-[#d4af37]/20 hover:border-[#d4af37]/50'
+                                            }`}
+                                        >
+                                            <div>
+                                                <div className="font-bold text-xs uppercase tracking-wider text-white">
+                                                    {discount.name}
+                                                    {discount.requires_proof && (
+                                                        <span className="ml-2 bg-[#d4af37]/20 text-[#d4af37] text-[9px] px-1.5 py-0.5 rounded font-normal uppercase tracking-normal">
+                                                            Upload Bukti
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="text-[10px] text-[#a1a1a1] mt-0.5">
+                                                    {discount.type === 'percent' ? `${discount.value}%` : `Rp ${discount.value.toLocaleString('id-ID')}`}
+                                                    {minPurchase > 0 && ` · Min. Belanja Rp ${minPurchase.toLocaleString('id-ID')}`}
+                                                </div>
+                                            </div>
+                                            {!isDisabled && (
+                                                <div className="text-right">
+                                                    <span className="text-xs font-mono font-bold text-[#d4af37]">
+                                                        -Rp {deduction.toLocaleString('id-ID')}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Proof Upload UI */}
+                            {selectedDiscount?.requires_proof && (
+                                <motion.div 
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    className="mt-4 pt-4 border-t border-[#333]"
+                                >
+                                    <label className="block text-xs uppercase tracking-widest text-[#d4af37] mb-2 font-bold">
+                                        Unggah Bukti Pendukung *
+                                    </label>
+                                    <p className="text-[10px] text-[#a1a1a1] mb-2">
+                                        Unggah gambar/screenshot (misal: ID mahasiswa, penetapan jabatan, screenshot IG post, dll) sebagai bukti kelayakan diskon.
+                                    </p>
+                                    <div className="flex items-center gap-3">
+                                        {proofFile && (
+                                            <div className="w-12 h-12 rounded overflow-hidden border border-[#d4af37]/30 shrink-0 bg-[#0d0d0d]">
+                                                <img 
+                                                    src={URL.createObjectURL(proofFile)} 
+                                                    alt="Preview bukti" 
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )}
+                                        <input
+                                            required
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files[0]) {
+                                                    setProofFile(e.target.files[0]);
+                                                }
+                                            }}
+                                            className="w-full text-xs text-[#a1a1a1] file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-[#d4af37] file:text-black hover:file:bg-[#b5952f] transition-colors cursor-pointer"
+                                        />
+                                    </div>
+                                </motion.div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="mt-4 mb-2">
                         <VoucherClaim 
-                            onVoucherApplied={setVoucherData} 
+                            key={voucherClaimKey}
+                            onVoucherApplied={handleVoucherApplied} 
                             initialPhone={formData.phone} 
                         />
                     </div>

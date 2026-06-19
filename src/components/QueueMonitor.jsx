@@ -18,6 +18,7 @@ const QueueMonitor = () => {
     const [appSettings, setAppSettings] = useState(null);
     const [reviewState, setReviewState] = useState({ rating: 0, comment: '', status: 'none', googleClicked: false }); // none, submitting, submitted
     const [pointsEarned, setPointsEarned] = useState(0);
+    const [specialMark, setSpecialMark] = useState(null);
 
     useEffect(() => {
         const fetchBooking = async () => {
@@ -34,7 +35,7 @@ const QueueMonitor = () => {
                 setBooking(data);
                 checkLateStatus(data, new Date());
 
-                // Fetch total visits for this phone number
+                // Fetch total visits and special mark for this phone number
                 if (data.phone_number) {
                     const { count, error: countError } = await supabase
                         .from('bookings')
@@ -44,6 +45,17 @@ const QueueMonitor = () => {
 
                     if (!countError && count !== null) {
                         setVisitCount(count);
+                    }
+
+                    // Fetch customer special mark
+                    const { data: customerData } = await supabase
+                        .from('customers')
+                        .select('special_mark')
+                        .eq('phone_number', data.phone_number)
+                        .maybeSingle();
+
+                    if (customerData?.special_mark) {
+                        setSpecialMark(customerData.special_mark);
                     }
                 }
 
@@ -299,7 +311,13 @@ const QueueMonitor = () => {
                 <h1 className="serif font-bold text-xl tracking-wider uppercase text-center flex-1">
                     <span className="text-[#d4af37]">A</span>URO
                 </h1>
-                <div className="w-6"></div> {/* Spacer for centering */}
+                <button 
+                    onClick={() => window.location.reload()} 
+                    className="text-[#a1a1a1] hover:text-[#d4af37] transition-colors"
+                    title="Refresh Antrean"
+                >
+                    <RefreshCw size={20} />
+                </button>
             </header>
 
             <main className="flex-1 flex flex-col items-center justify-center p-6 pb-24">
@@ -314,6 +332,12 @@ const QueueMonitor = () => {
                     <div className="text-center mb-8">
                         <p className="text-xs uppercase tracking-[0.2em] text-[#a1a1a1] mb-2">Tiket Pelanggan</p>
                         <h2 className="serif text-3xl font-bold italic">{customer_name}</h2>
+                        {specialMark && (
+                            <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-[#d4af37]/20 border border-[#d4af37]/50 rounded-full text-xs font-bold text-[#d4af37] uppercase tracking-wider">
+                                <span>✨</span>
+                                <span>{specialMark}</span>
+                            </div>
+                        )}
                     </div>
 
                     <div className={`flex flex-col items-center justify-center py-4 px-6 rounded-lg border mb-8 ${statusBg}`}>

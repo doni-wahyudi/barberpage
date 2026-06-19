@@ -49,6 +49,24 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     const [servicesData, setServicesData] = useState([]);
     const [barbers, setBarbers] = useState([]);
     const [voucherData, setVoucherData] = useState(null);
+    const [publicDiscounts, setPublicDiscounts] = useState([]);
+    const [selectedDiscount, setSelectedDiscount] = useState(null);
+    const [proofFile, setProofFile] = useState(null);
+    const [voucherClaimKey, setVoucherClaimKey] = useState(0);
+
+    const getDiscountDeduction = (discount, subtotal) => {
+        if (!discount) return 0;
+        if (discount.min_purchase && subtotal < discount.min_purchase) return 0;
+        if (discount.type === 'percent') {
+            return Math.floor((subtotal * discount.value) / 100);
+        } else {
+            return discount.value;
+        }
+    };
+
+    const formatCurrency = (val) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+    };
 
     const validatePhone = (phone) => {
         const cleanPhone = phone.replace(/[^0-9]/g, '');
@@ -136,6 +154,48 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         fetchBookings();
     }, [formData.date, formData.barber, isOpen]);
 
+    // Reset form when modal state changes
+    useEffect(() => {
+        if (!isOpen) {
+            setFormData({
+                name: '',
+                phone: '',
+                service: '',
+                barber: '',
+                date: (() => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const defaultDailyHours = [
+                        { dayOfWeek: 1, dayName: 'Senin', isHoliday: false },
+                        { dayOfWeek: 2, dayName: 'Selasa', isHoliday: false },
+                        { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false },
+                        { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false },
+                        { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false },
+                        { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true },
+                        { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false }
+                    ];
+                    let d = new Date(todayStr + 'T00:00:00');
+                    for (let i = 0; i < 7; i++) {
+                        const dayOfWeek = d.getDay();
+                        const daySchedule = defaultDailyHours.find(ds => ds.dayOfWeek === dayOfWeek);
+                        if (daySchedule && !daySchedule.isHoliday) {
+                            const year = d.getFullYear();
+                            const month = String(d.getMonth() + 1).padStart(2, '0');
+                            const day = String(d.getDate()).padStart(2, '0');
+                            return `${year}-${month}-${day}`;
+                        }
+                        d.setDate(d.getDate() + 1);
+                    }
+                    return todayStr;
+                })(),
+                time: ''
+            });
+            setVoucherData(null);
+            setSelectedDiscount(null);
+            setProofFile(null);
+            setFormError('');
+        }
+    }, [isOpen]);
+
     // Fetch dynamic options
     useEffect(() => {
         if (!isOpen) return;
@@ -147,6 +207,14 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             if (sData) {
                 setServices(sData.map(s => s.name));
                 setServicesData(sData);
+            }
+
+            const { data: dData } = await supabase.from('discounts')
+                .select('*')
+                .eq('is_active', true)
+                .eq('show_public', true);
+            if (dData) {
+                setPublicDiscounts(dData);
             }
         };
         fetchOptions();
@@ -165,6 +233,26 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         }
     }, [initialData, isOpen]);
 
+    // Intercept back button to close modal
+    useEffect(() => {
+        if (isOpen) {
+            window.history.pushState({ modal: 'booking' }, '');
+
+            const handlePopState = (e) => {
+                onClose();
+            };
+
+            window.addEventListener('popstate', handlePopState);
+            return () => {
+                window.removeEventListener('popstate', handlePopState);
+                if (window.history.state?.modal === 'booking') {
+                    window.history.back();
+                }
+            };
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
@@ -182,6 +270,38 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         setLoading(true);
 
         try {
+            let uploadedUrl = null;
+            let discountStatus = 'none';
+
+            if (selectedDiscount && selectedDiscount.requires_proof) {
+                if (!proofFile) {
+                    setFormError(`Silakan unggah bukti untuk diskon "${selectedDiscount.name}".`);
+                    setLoading(false);
+                    return;
+                }
+
+                try {
+                    const fileExt = proofFile.name.split('.').pop();
+                    const fileName = `${Math.random().toString(36).substring(2, 15)}-${Date.now()}.${fileExt}`;
+                    const filePath = `${fileName}`;
+                    const { error: uploadError } = await supabase.storage
+                        .from('discount-proofs')
+                        .upload(filePath, proofFile);
+                    if (uploadError) throw uploadError;
+
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('discount-proofs')
+                        .getPublicUrl(filePath);
+                    uploadedUrl = publicUrl;
+                    discountStatus = 'pending';
+                } catch (uploadErr) {
+                    console.error('Error uploading proof:', uploadErr);
+                    setFormError('Gagal mengunggah gambar bukti. Silakan coba lagi.');
+                    setLoading(false);
+                    return;
+                }
+            }
+
             // Server-side double-booking check right before insert
             const { data: existing } = await supabase
                 .from('bookings')
@@ -218,7 +338,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         status: 'pending',
                         total_price: grandTotal,
                         voucher_discount: voucherData ? voucherData.discountValue : 0,
-                        voucher_program: voucherData ? voucherData.programId : null
+                        voucher_program: voucherData ? voucherData.programId : null,
+                        proof_url: uploadedUrl,
+                        discount_status: discountStatus
                     }
                 ])
                 .select();
@@ -245,6 +367,8 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             setLoading(false);
         }
     };
+
+    const chosenServiceObj = servicesData.find(s => s.name === formData.service);
 
     return (
         <AnimatePresence>
@@ -296,6 +420,8 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                             onClose();
                                             setFormData({ name: '', phone: '', service: '', barber: '', date: '', time: '' });
                                             setVoucherData(null);
+                                            setSelectedDiscount(null);
+                                            setProofFile(null);
                                         }}
                                         className="py-3 px-6 bg-transparent border border-[#333] hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded text-white"
                                     >
@@ -424,9 +550,119 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                         </select>
                                     </div>
 
+                                    {/* Public Discounts Selection */}
+                                    {publicDiscounts.length > 0 && (chosenServiceObj?.price || 0) > 0 && (
+                                        <div className="bg-[#141414] border border-[#d4af37]/20 rounded p-4 text-left">
+                                            <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block mb-3">
+                                                Diskon Tersedia
+                                            </span>
+                                            <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                                                {publicDiscounts.map((discount) => {
+                                                    const isSelected = selectedDiscount?.id === discount.id;
+                                                    const subtotal = chosenServiceObj.price;
+                                                    const minPurchase = discount.min_purchase || 0;
+                                                    const deduction = getDiscountDeduction(discount, subtotal);
+                                                    const isDisabled = subtotal < minPurchase;
+
+                                                    return (
+                                                        <button
+                                                            key={discount.id}
+                                                            type="button"
+                                                            disabled={isDisabled}
+                                                            onClick={() => {
+                                                                if (isSelected) {
+                                                                    setSelectedDiscount(null);
+                                                                    setVoucherData(null);
+                                                                    setProofFile(null);
+                                                                } else {
+                                                                    setSelectedDiscount(discount);
+                                                                    setVoucherData({
+                                                                        discountValue: deduction,
+                                                                        programId: discount.name,
+                                                                        claimId: null
+                                                                    });
+                                                                    setVoucherClaimKey(prev => prev + 1);
+                                                                    setProofFile(null);
+                                                                }
+                                                            }}
+                                                            className={`w-full p-3 rounded border text-left transition-all flex justify-between items-center ${
+                                                                isDisabled ? 'opacity-40 cursor-not-allowed border-[#333]' :
+                                                                isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' :
+                                                                'bg-[#0d0d0d] border-[#d4af37]/20 hover:border-[#d4af37]/50'
+                                                            }`}
+                                                        >
+                                                            <div>
+                                                                <div className="font-bold text-xs uppercase tracking-wider text-white">
+                                                                    {discount.name}
+                                                                    {discount.requires_proof && (
+                                                                        <span className="ml-2 bg-[#d4af37]/20 text-[#d4af37] text-[9px] px-1.5 py-0.5 rounded font-normal uppercase tracking-normal">
+                                                                            Upload Bukti
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <div className="text-[10px] text-[#a1a1a1] mt-0.5">
+                                                                    {discount.type === 'percent' ? `${discount.value}%` : `Rp ${discount.value.toLocaleString('id-ID')}`}
+                                                                    {minPurchase > 0 && ` · Min. Belanja Rp ${minPurchase.toLocaleString('id-ID')}`}
+                                                                </div>
+                                                            </div>
+                                                            {!isDisabled && (
+                                                                <div className="text-right">
+                                                                    <span className="text-xs font-mono font-bold text-[#d4af37]">
+                                                                        -Rp {deduction.toLocaleString('id-ID')}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+
+                                            {/* Proof Upload UI */}
+                                            {selectedDiscount?.requires_proof && (
+                                                <div className="mt-4 pt-4 border-t border-[#333] space-y-2">
+                                                    <label className="block text-xs uppercase tracking-widest text-[#d4af37] font-bold">
+                                                        Unggah Bukti Pendukung *
+                                                    </label>
+                                                    <p className="text-[10px] text-[#a1a1a1]">
+                                                        Unggah gambar/screenshot bukti kelayakan diskon.
+                                                    </p>
+                                                    <div className="flex items-center gap-3">
+                                                        {proofFile && (
+                                                            <div className="w-12 h-12 rounded overflow-hidden border border-[#d4af37]/30 shrink-0 bg-[#0d0d0d]">
+                                                                <img 
+                                                                    src={URL.createObjectURL(proofFile)} 
+                                                                    alt="Preview bukti" 
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        <input
+                                                            required
+                                                            type="file"
+                                                            accept="image/*"
+                                                            onChange={(e) => {
+                                                                if (e.target.files && e.target.files[0]) {
+                                                                    setProofFile(e.target.files[0]);
+                                                                }
+                                                            }}
+                                                            className="w-full text-xs text-[#a1a1a1] file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-[#d4af37] file:text-black hover:file:bg-[#b5952f] transition-colors cursor-pointer"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     <div className="mt-4 mb-2">
                                         <VoucherClaim 
-                                            onVoucherApplied={setVoucherData} 
+                                            key={`vc-${voucherClaimKey}`}
+                                            onVoucherApplied={(data) => {
+                                                setVoucherData(data);
+                                                if (data) {
+                                                    setSelectedDiscount(null);
+                                                    setProofFile(null);
+                                                }
+                                            }} 
                                             initialPhone={formData.phone} 
                                         />
                                     </div>
