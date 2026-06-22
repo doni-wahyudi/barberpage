@@ -20,8 +20,13 @@ const VoucherClaim = ({ onVoucherApplied, initialPhone = '' }) => {
     const otpRefs = useRef([]);
 
     useEffect(() => {
-        if (initialPhone && !phone) {
-            setPhone(initialPhone);
+        setPhone(initialPhone);
+        if (stage === 4) {
+            setStage(0);
+            setSuccessData(null);
+            setSelectedProgram(null);
+            setNpm('');
+            onVoucherApplied(null);
         }
     }, [initialPhone]);
 
