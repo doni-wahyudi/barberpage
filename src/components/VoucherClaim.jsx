@@ -85,13 +85,11 @@ const VoucherClaim = ({ onVoucherApplied, initialPhone = '' }) => {
                 }
                 
                 setError(message);
-                setLoading(false);
                 return;
             }
 
             if (data && data.error) {
                 setError(data.error);
-                setLoading(false);
                 return;
             }
 
@@ -100,6 +98,7 @@ const VoucherClaim = ({ onVoucherApplied, initialPhone = '' }) => {
             setStage(3);
         } catch (err) {
             setError(err.message || 'Terjadi kesalahan sistem.');
+        } finally {
             setLoading(false);
         }
     };

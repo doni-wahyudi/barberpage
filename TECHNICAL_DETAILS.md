@@ -21,7 +21,10 @@ An elegant, customer-facing web application and admin dashboard for Auro Barbers
 * **Admin Dashboard Routes (`_studio_admin`)**:
   * `/_studio_admin` -> Core Admin dashboard panel.
   * `/_studio_admin/login` -> Admin credentials verification page.
-  * `/_studio_admin/insights` -> Business insights, statistics, and graphs (utilizing Recharts).
+  * `/_studio_admin/insights` -> Business insights and analytics panel. Features three sub-tabs:
+    * **Laporan Bisnis**: Aggregates client visits (bookings vs. walk-ins), net/gross revenue (cukur vs. products), payment methods (cash, transfer, qris, gopay, ovo), weekly capster performance headcounts, and monthly new customer metrics.
+    * **Customer CRM**: Detailed customer visits, last visit tracking, and reward points.
+    * **Daftar Hitam (Blacklist)**: Instant mobile-number banning list for online reservations.
   * `/_studio_admin/products` -> Product inventory management (prices, retail stock).
   * `/_studio_admin/services` -> Service catalog management.
   * `/_studio_admin/capsters` -> Barber team management (active shifts, assignments).
