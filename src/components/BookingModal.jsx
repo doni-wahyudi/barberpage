@@ -200,8 +200,8 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     useEffect(() => {
         if (!isOpen) return;
         const fetchOptions = async () => {
-            const { data: bData } = await supabase.from('barbers').select('name').eq('is_active', true);
-            if (bData) setBarbers(bData.map(b => b.name));
+            const { data: bData } = await supabase.from('barbers').select('*').eq('is_active', true);
+            if (bData) setBarbers(bData);
 
             const { data: sData } = await supabase.from('services').select('name, price');
             if (sData) {
@@ -267,7 +267,13 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             return;
         }
 
-        setLoading(true);
+        const selectedBarberObj = barbers.find(b => b.name === formData.barber);
+        const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+        if (bookedSlots.length >= maxBookings) {
+            setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
+            setLoading(false);
+            return;
+        }
 
         try {
             let uploadedUrl = null;
@@ -369,6 +375,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     };
 
     const chosenServiceObj = servicesData.find(s => s.name === formData.service);
+    const selectedBarberObj = barbers.find(b => b.name === formData.barber);
+    const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+    const isLimitReached = formData.barber && bookedSlots.length >= maxBookings;
 
     return (
         <AnimatePresence>
@@ -545,9 +554,14 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                         >
                                             <option value="" disabled>Pilih Capster</option>
                                             {barbers.map(b => (
-                                                <option key={b} value={b}>{b}</option>
+                                                <option key={b.id || b.name} value={b.name}>{b.name}</option>
                                             ))}
                                         </select>
+                                        {formData.barber && isLimitReached && (
+                                            <p className="text-red-500 text-xs mt-2 border border-red-500/30 p-2 rounded bg-red-500/10">
+                                                ⚠️ Capster {formData.barber} sudah penuh hari ini (Maks. {maxBookings} booking). Silakan pilih tanggal atau capster lain.
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Summary Box */}
@@ -713,9 +727,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                     </div>
 
                                     <button
-                                        disabled={loading}
+                                        disabled={loading || isLimitReached}
                                         type="submit"
-                                        className="gold-button w-full flex items-center justify-center gap-2"
+                                        className={`gold-button w-full flex items-center justify-center gap-2 ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         {loading ? (
                                             <motion.div

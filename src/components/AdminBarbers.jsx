@@ -20,7 +20,8 @@ const AdminBarbers = () => {
         specialty: '',
         bio: '',
         photo_url: '',
-        sort_order: 0
+        sort_order: 0,
+        max_daily_bookings: 8
     });
 
     const fetchBarbers = async () => {
@@ -70,11 +71,12 @@ const AdminBarbers = () => {
                 specialty: barber.specialty || '',
                 bio: barber.bio || '',
                 photo_url: barber.photo_url || '',
-                sort_order: barber.sort_order || 0
+                sort_order: barber.sort_order || 0,
+                max_daily_bookings: barber.max_daily_bookings ?? 8
             });
         } else {
             setEditingBarber(null);
-            setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0 });
+            setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0, max_daily_bookings: 8 });
         }
         setImageFile(null);
         setIsModalOpen(true);
@@ -83,7 +85,7 @@ const AdminBarbers = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingBarber(null);
-        setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0 });
+        setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0, max_daily_bookings: 8 });
         setImageFile(null);
     };
 
@@ -126,7 +128,8 @@ const AdminBarbers = () => {
             specialty: formData.specialty,
             bio: formData.bio,
             photo_url: finalPhotoUrl || null,
-            sort_order: formData.sort_order
+            sort_order: formData.sort_order,
+            max_daily_bookings: parseInt(formData.max_daily_bookings, 10) || 8
         };
 
         try {
@@ -294,7 +297,10 @@ const AdminBarbers = () => {
                                     <div className="p-5 flex-1 flex flex-col">
                                         <div className="mb-4">
                                             <h3 className="font-bold text-xl mb-1">{barber.name}</h3>
-                                            <p className="text-[#d4af37] text-xs uppercase tracking-[0.2em] font-bold">{barber.specialty || 'Professional Barber'}</p>
+                                            <div className="flex justify-between items-center">
+                                                <p className="text-[#d4af37] text-xs uppercase tracking-[0.2em] font-bold">{barber.specialty || 'Professional Barber'}</p>
+                                                <span className="text-[#a1a1a1] text-xs font-mono">Limit: {barber.max_daily_bookings ?? 8}/hari</span>
+                                            </div>
                                         </div>
                                         
                                         {barber.bio && (
@@ -367,6 +373,18 @@ const AdminBarbers = () => {
                                                 className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white"
                                                 value={formData.specialty}
                                                 onChange={(e) => setFormData({ ...formData, specialty: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-xs uppercase tracking-widest text-[#a1a1a1] mb-2 font-bold">Batas Booking Harian</label>
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                placeholder="Cth: 8"
+                                                className="w-full bg-[#1a1a1a] border border-[#333] rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors text-white"
+                                                value={formData.max_daily_bookings}
+                                                onChange={(e) => setFormData({ ...formData, max_daily_bookings: e.target.value })}
                                             />
                                         </div>
                                     </div>
