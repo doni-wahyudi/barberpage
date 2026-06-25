@@ -54,7 +54,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
             { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false },
             { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false },
             { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false },
-            { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true },
+            { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: false },
             { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false }
         ];
         let d = new Date(todayStr + 'T00:00:00');

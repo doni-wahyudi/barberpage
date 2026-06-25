@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee, Loader2, Search, Package } from 'lucide-react';
+import { Calendar, Clock, User, Phone, CheckCircle, ArrowLeft, Scissors, Coffee, Loader2, Search, Package, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import CircularTimePicker from './CircularTimePicker';
 import VoucherClaim from './VoucherClaim';
@@ -261,9 +261,17 @@ const MobileBooking = () => {
             return;
         }
         if (step === 2) {
-            if (formData.type === 'service' && (!formData.service || !formData.barber || !formData.date || !formData.time)) {
-                setFormError('Please select all required options to proceed.');
-                return;
+            if (formData.type === 'service') {
+                if (!formData.service || !formData.barber || !formData.date || !formData.time) {
+                    setFormError('Please select all required options to proceed.');
+                    return;
+                }
+                const selectedBarberObj = barbers.find(b => b.name === formData.barber);
+                const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+                if (bookedSlots.length >= maxBookings) {
+                    setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
+                    return;
+                }
             }
         }
         setStep(prev => prev + 1);
@@ -286,8 +294,19 @@ const MobileBooking = () => {
             return;
         }
 
+        if (formData.type === 'service') {
+            const selectedBarberObj = barbers.find(b => b.name === formData.barber);
+            const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+            if (bookedSlots.length >= maxBookings) {
+                setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
+                setLoading(false);
+                return;
+            }
+        }
+
         if (formData.type === 'service' && isSlotBooked(formData.time)) {
             setFormError('This slot was just taken. Please choose another time.');
+            setLoading(false);
             return;
         }
 
@@ -537,8 +556,13 @@ const MobileBooking = () => {
         </motion.div>
     );
 
-    const renderStep2Details = () => (
-        <motion.div
+    const renderStep2Details = () => {
+        const selectedBarberObj = barbers.find(b => b.name === formData.barber);
+        const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+        const isLimitReached = formData.barber && bookedSlots.length >= maxBookings;
+
+        return (
+            <motion.div
             key="step2"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -577,8 +601,13 @@ const MobileBooking = () => {
                     onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
                 >
                     <option value="" disabled>Pilih Kapster</option>
-                    {barbers.map(b => <option key={b.id} value={b.name}>{b.name}</option>)}
+                    {barbers.map(b => <option key={b.id || b.name} value={b.name}>{b.name}</option>)}
                 </select>
+                {formData.barber && isLimitReached && (
+                    <p className="text-red-500 text-xs mt-2 border border-red-500/30 p-2 rounded bg-red-500/10">
+                        ⚠️ Capster {formData.barber} sudah penuh hari ini (Maks. {maxBookings} booking). Silakan pilih tanggal atau capster lain.
+                    </p>
+                )}
 
                 <select
                     className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors appearance-none"
@@ -627,7 +656,11 @@ const MobileBooking = () => {
                 </div>
             </div>
 
-            <button onClick={handleNext} className="gold-button w-full mt-6">
+            <button 
+                disabled={isLimitReached} 
+                onClick={handleNext} 
+                className={`gold-button w-full mt-6 ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
                 Lanjut ke Detail
             </button>
             <Link
@@ -637,7 +670,8 @@ const MobileBooking = () => {
                 <Search size={18} /> Cek Status Booking
             </Link>
         </motion.div>
-    );
+        );
+    };
 
     const toggleAddon = (item) => {
         setFormData(prev => {

@@ -10,7 +10,7 @@ const DEFAULT_SETTINGS = {
         { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
         { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
         { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true, openingHour: '10:00', closingHour: '22:00' },
+        { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
         { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false, openingHour: '10:00', closingHour: '22:00' }
     ]
 };

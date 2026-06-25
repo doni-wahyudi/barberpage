@@ -625,6 +625,52 @@ const AdminInsights = () => {
         return new Date(dateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
+    const getRelativeTimeStr = (dateStr) => {
+        if (!dateStr) return 'Belum pernah';
+        const lastDate = new Date(dateStr);
+        const now = new Date();
+        const diffTime = Math.abs(now.getTime() - lastDate.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 1) return 'Hari ini / Kemarin';
+        if (diffDays < 7) return `${diffDays} hari yang lalu`;
+        
+        const diffWeeks = Math.floor(diffDays / 7);
+        if (diffWeeks < 4) return `${diffWeeks} minggu yang lalu`;
+        
+        const diffMonths = Math.floor(diffDays / 30);
+        if (diffMonths < 12) return `${diffMonths} bulan yang lalu`;
+        
+        const diffYears = Math.floor(diffDays / 365);
+        return `${diffYears} tahun yang lalu`;
+    };
+
+    const handleWebFollowUp = async (client) => {
+        let cleanPhone = client.phone_number.replace(/[^0-9]/g, '');
+        if (cleanPhone.startsWith('0')) {
+            cleanPhone = '62' + cleanPhone.substring(1);
+        }
+        const message = `Halo Kak ${client.name}, apa kabar? Kami dari Auro Barbershop merindukan Kakak! Sudah waktunya untuk potong rambut lagi nih biar tetap rapi dan keren. Ditunggu kedatangannya ya Kak di Auro Barbershop! 💈✂️`;
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        
+        window.open(url, '_blank');
+        
+        const now = new Date().toISOString();
+        try {
+            const { error } = await supabase
+                .from('customers')
+                .update({ last_follow_up: now })
+                .eq('phone_number', client.phone_number);
+                
+            if (!error) {
+                setCustomers(prev => prev.map(c => c.phone_number === client.phone_number ? { ...c, last_follow_up: now } : c));
+                setFilteredCustomers(prev => prev.map(c => c.phone_number === client.phone_number ? { ...c, last_follow_up: now } : c));
+            }
+        } catch (err) {
+            console.error('Failed to update last_follow_up on Supabase:', err);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white p-6 font-sans">
             <div className="max-w-6xl mx-auto">
@@ -1148,9 +1194,16 @@ const AdminInsights = () => {
                                                             </div>
                                                         </td>
                                                         <td className="p-5">
-                                                            <div className="flex items-center gap-2 text-sm">
-                                                                <Calendar size={14} className="text-[#555]" />
-                                                                {formatDate(client.last_visit)}
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2 text-sm">
+                                                                    <Calendar size={14} className="text-[#555]" />
+                                                                    {formatDate(client.last_visit)}
+                                                                </div>
+                                                                {client.last_visit && (
+                                                                    <span className="text-[10px] text-[#a1a1a1] ml-6">
+                                                                        ({getRelativeTimeStr(client.last_visit)})
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </td>
                                                         <td className="p-5">
@@ -1165,6 +1218,31 @@ const AdminInsights = () => {
                                                         </td>
                                                         <td className="p-5 text-center">
                                                             <div className="flex items-center justify-center gap-2">
+                                                                {(() => {
+                                                                    const lastVisit = client.last_visit;
+                                                                    const isMoreThanMonth = lastVisit && (Date.now() - new Date(lastVisit).getTime()) > (30 * 24 * 60 * 60 * 1000);
+                                                                    const hasFollowedUp = client.last_follow_up;
+                                                                    
+                                                                    if (isMoreThanMonth) {
+                                                                        return (
+                                                                            <div className="flex flex-col items-center gap-1">
+                                                                                <button
+                                                                                    onClick={() => handleWebFollowUp(client)}
+                                                                                    className="px-3 py-1.5 bg-[#25D366] hover:bg-[#20ba59] text-white text-xs font-bold uppercase rounded transition-colors inline-flex items-center justify-center gap-1.5"
+                                                                                    title="Follow Up WhatsApp"
+                                                                                >
+                                                                                    💬 WA
+                                                                                </button>
+                                                                                {hasFollowedUp && (
+                                                                                    <span className="text-[9px] text-[#25D366] font-bold block mt-0.5">
+                                                                                        ✓ {new Date(hasFollowedUp).toLocaleDateString('id-ID')}
+                                                                                    </span>
+                                                                                )}
+                                                                            </div>
+                                                                        );
+                                                                    }
+                                                                    return null;
+                                                                })()}
                                                                 <button
                                                                     onClick={() => openEditModal(client)}
                                                                     className="px-3 py-1.5 border border-[#d4af37]/50 hover:bg-[#d4af37]/10 text-[#d4af37] text-xs font-bold uppercase rounded transition-colors inline-flex items-center justify-center gap-1.5"
