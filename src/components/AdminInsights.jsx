@@ -13,6 +13,8 @@ const AdminInsights = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [stats, setStats] = useState({ revenueData: [], serviceData: [], barberData: [] });
+    const [waTemplate, setWaTemplate] = useState('Halo Kak {name}, apa kabar? Kami dari Auro Barbershop merindukan Kakak! Sudah waktunya untuk potong rambut lagi nih biar tetap rapi dan keren. Ditunggu kedatangannya ya Kak di Auro Barbershop! 💈✂️');
+    const [saveLoading, setSaveLoading] = useState(false);
 
     // Date preset and range states
     const getPresetDates = (preset) => {
@@ -382,6 +384,16 @@ const AdminInsights = () => {
 
                 setStats({ revenueData, serviceData, barberData });
 
+                // 4. Fetch WhatsApp Follow-Up Template
+                const { data: settingsData } = await supabase
+                    .from('app_settings')
+                    .select('whatsapp_followup_template')
+                    .eq('id', 1)
+                    .maybeSingle();
+                if (settingsData && settingsData.whatsapp_followup_template) {
+                    setWaTemplate(settingsData.whatsapp_followup_template);
+                }
+
             } catch (err) {
                 console.error("Error fetching insights:", err);
             } finally {
@@ -391,6 +403,23 @@ const AdminInsights = () => {
 
         fetchInsights();
     }, []);
+
+    const handleSaveTemplate = async () => {
+        setSaveLoading(true);
+        try {
+            const { error } = await supabase
+                .from('app_settings')
+                .update({ whatsapp_followup_template: waTemplate })
+                .eq('id', 1);
+            if (error) throw error;
+            alert('Template WhatsApp berhasil disimpan!');
+        } catch (err) {
+            console.error('Error saving template:', err);
+            alert('Gagal menyimpan template: ' + err.message);
+        } finally {
+            setSaveLoading(false);
+        }
+    };
 
     // Reports Aggregator
     const reportsData = React.useMemo(() => {
@@ -1060,6 +1089,30 @@ const AdminInsights = () => {
                         </div>
                     ) : (
                         <div className="space-y-8">
+                            {/* Template Message Editor */}
+                            <div className="glass-card p-6 border border-[#d4af37]/10 mb-6">
+                                <h3 className="text-sm font-bold text-[#d4af37] mb-1 flex items-center gap-2">
+                                    💬 Template WhatsApp Follow-Up
+                                </h3>
+                                <p className="text-[11px] text-[#a1a1a1] mb-3">
+                                    Gunakan tag <code className="text-[#d4af37] bg-black/40 px-1 rounded font-mono">{`{name}`}</code> untuk menyisipkan nama pelanggan secara otomatis.
+                                </p>
+                                <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    <textarea
+                                        value={waTemplate}
+                                        onChange={(e) => setWaTemplate(e.target.value)}
+                                        className="w-full flex-1 min-h-[65px] p-3 bg-black/50 border border-[#333] rounded text-white text-sm outline-none focus:border-[#d4af37]"
+                                        placeholder="Tulis pesan follow-up..."
+                                    />
+                                    <button
+                                        onClick={handleSaveTemplate}
+                                        disabled={saveLoading}
+                                        className="w-full md:w-auto px-4 py-2 bg-[#d4af37] hover:bg-[#b8860b] disabled:bg-[#555] text-black text-xs font-bold uppercase rounded transition-colors whitespace-nowrap"
+                                    >
+                                        {saveLoading ? 'Menyimpan...' : 'Simpan'}
+                                    </button>
+                                </div>
+                            </div>
                             {/* Analytics Overview */}
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                 {/* Revenue Chart */}
@@ -1219,8 +1272,9 @@ const AdminInsights = () => {
                                                         <td className="p-5 text-center">
                                                             <div className="flex items-center justify-center gap-2">
                                                                 {(() => {
-                                                                    const lastVisit = client.last_visit;
-                                                                    const isMoreThanMonth = lastVisit && (Date.now() - new Date(lastVisit).getTime()) > (30 * 24 * 60 * 60 * 1000);
+                                                                    const lastVisit = client.last_visit || client.created_at;
+                                                                    const threshold = 10 * 24 * 60 * 60 * 1000; // 10-day threshold for testing (change to 30 in production)
+                                                                    const isMoreThanMonth = lastVisit && (Date.now() - new Date(lastVisit).getTime()) > threshold;
                                                                     const hasFollowedUp = client.last_follow_up;
                                                                     
                                                                     if (isMoreThanMonth) {
@@ -1234,9 +1288,33 @@ const AdminInsights = () => {
                                                                                     💬 WA
                                                                                 </button>
                                                                                 {hasFollowedUp && (
-                                                                                    <span className="text-[9px] text-[#25D366] font-bold block mt-0.5">
-                                                                                        ✓ {new Date(hasFollowedUp).toLocaleDateString('id-ID')}
-                                                                                    </span>
+                                                                                    <div className="flex flex-col items-center gap-0.5 mt-0.5">
+                                                                                        <span className="text-[9px] text-[#25D366] font-bold block">
+                                                                                            ✓ {new Date(hasFollowedUp).toLocaleDateString('id-ID')}
+                                                                                        </span>
+                                                                                        <button
+                                                                                            onClick={async () => {
+                                                                                                if (window.confirm('Batal tandai follow up untuk pelanggan ini?')) {
+                                                                                                    try {
+                                                                                                        const { error } = await supabase
+                                                                                                            .from('customers')
+                                                                                                            .update({ last_follow_up: null })
+                                                                                                            .eq('phone_number', client.phone_number);
+                                                                                                        if (!error) {
+                                                                                                            setCustomers(prev => prev.map(c => c.phone_number === client.phone_number ? { ...c, last_follow_up: null } : c));
+                                                                                                            setFilteredCustomers(prev => prev.map(c => c.phone_number === client.phone_number ? { ...c, last_follow_up: null } : c));
+                                                                                                        }
+                                                                                                    } catch (err) {
+                                                                                                        console.error(err);
+                                                                                                    }
+                                                                                                }
+                                                                                            }}
+                                                                                            className="text-[9px] text-red-400 hover:text-red-300 font-bold bg-transparent border-none cursor-pointer underline"
+                                                                                            title="Batalkan tandai"
+                                                                                        >
+                                                                                            Batal
+                                                                                        </button>
+                                                                                    </div>
                                                                                 )}
                                                                             </div>
                                                                         );
