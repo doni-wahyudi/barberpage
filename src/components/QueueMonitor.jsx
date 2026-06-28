@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { motion } from 'framer-motion';
-import { Clock, User, Scissors, AlertCircle, ArrowLeft, Loader2, CheckCircle2, Star } from 'lucide-react';
+import { Clock, User, Scissors, AlertCircle, ArrowLeft, Loader2, CheckCircle2, Star, RefreshCw } from 'lucide-react';
 
 const QueueMonitor = () => {
     const { id } = useParams();

@@ -15,6 +15,7 @@ const AdminInsights = () => {
     const [stats, setStats] = useState({ revenueData: [], serviceData: [], barberData: [] });
     const [waTemplate, setWaTemplate] = useState('Halo Kak {name}, apa kabar? Kami dari Auro Barbershop merindukan Kakak! Sudah waktunya untuk potong rambut lagi nih biar tetap rapi dan keren. Ditunggu kedatangannya ya Kak di Auro Barbershop! 💈✂️');
     const [saveLoading, setSaveLoading] = useState(false);
+    const [sortOrder, setSortOrder] = useState('none'); // 'none' | 'desc' | 'asc'
 
     // Date preset and range states
     const getPresetDates = (preset) => {
@@ -635,19 +636,38 @@ const AdminInsights = () => {
         };
     }, [allTransactions, allBookings, customers, dateFrom, dateTo, servicesList]);
 
-    // Handle search filter
+    // Handle search filter and sorting
     useEffect(() => {
-        if (!searchTerm.trim()) {
-            setFilteredCustomers(customers);
-            return;
+        let result = [...customers];
+        
+        // 1. Search filter
+        if (searchTerm.trim()) {
+            const term = searchTerm.toLowerCase();
+            result = result.filter(c =>
+                c.name.toLowerCase().includes(term) ||
+                c.phone_number.includes(term)
+            );
         }
-        const term = searchTerm.toLowerCase();
-        const filtered = customers.filter(c =>
-            c.name.toLowerCase().includes(term) ||
-            c.phone_number.includes(term)
-        );
-        setFilteredCustomers(filtered);
-    }, [searchTerm, customers]);
+        
+        // 2. Sorting by last visit
+        if (sortOrder !== 'none') {
+            result.sort((a, b) => {
+                const dateA = a.last_visit || a.created_at;
+                const dateB = b.last_visit || b.created_at;
+                
+                const timeA = dateA ? new Date(dateA).getTime() : 0;
+                const timeB = dateB ? new Date(dateB).getTime() : 0;
+                
+                if (sortOrder === 'asc') {
+                    return timeA - timeB;
+                } else {
+                    return timeB - timeA;
+                }
+            });
+        }
+        
+        setFilteredCustomers(result);
+    }, [searchTerm, customers, sortOrder]);
 
     const formatDate = (dateStr) => {
         if (!dateStr) return 'Belum ada';
@@ -738,15 +758,29 @@ const AdminInsights = () => {
                     </div>
 
                     {activeTab === 'crm' && (
-                        <div className="relative w-full md:w-72">
-                            <Search size={18} className="absolute left-3 top-3 text-[#555]" />
-                            <input
-                                type="text"
-                                placeholder="Search name or phone..."
-                                className="w-full bg-[#111] border border-[#333] rounded px-4 py-2.5 pl-10 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                        <div className="flex flex-col md:flex-row gap-4 items-center w-full md:w-auto">
+                            <div className="relative w-full md:w-64">
+                                <Search size={18} className="absolute left-3 top-3 text-[#555]" />
+                                <input
+                                    type="text"
+                                    placeholder="Search name or phone..."
+                                    className="w-full bg-[#111] border border-[#333] rounded px-4 py-2.5 pl-10 focus:outline-none focus:border-[#d4af37] text-sm transition-colors"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 w-full md:w-auto">
+                                <span className="text-xs text-[#a1a1a1] whitespace-nowrap">Sort Last Visit:</span>
+                                <select
+                                    value={sortOrder}
+                                    onChange={(e) => setSortOrder(e.target.value)}
+                                    className="bg-[#111] border border-[#333] rounded px-3 py-2 text-xs text-white outline-none focus:border-[#d4af37] cursor-pointer font-bold"
+                                >
+                                    <option value="none">Default (None)</option>
+                                    <option value="desc">Terbaru (Newest First)</option>
+                                    <option value="asc">Terlama (Oldest First)</option>
+                                </select>
+                            </div>
                         </div>
                     )}
                 </header>
