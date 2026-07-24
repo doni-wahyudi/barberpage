@@ -33,6 +33,12 @@ const MobileBooking = () => {
     const [voucherClaimKey, setVoucherClaimKey] = useState(0);
     const [proofFile, setProofFile] = useState(null);
 
+    // Referral Code States
+    const [referralInput, setReferralInput] = useState('');
+    const [appliedReferral, setAppliedReferral] = useState(null);
+    const [referralError, setReferralError] = useState('');
+    const [referralLoading, setReferralLoading] = useState(false);
+
     const getDiscountDeduction = (discount, subtotal) => {
         if (!discount) return 0;
         if (discount.min_purchase && subtotal < discount.min_purchase) return 0;
@@ -48,9 +54,55 @@ const MobileBooking = () => {
     };
 
     const handleVoucherApplied = (data) => {
+        if (appliedReferral) return; // Block voucher if referral is applied
         setVoucherData(data);
         setSelectedDiscount(null);
         setProofFile(null);
+    };
+
+    const verifyReferralCode = async (codeToVerify) => {
+        const cleanCode = (codeToVerify || referralInput).trim().toUpperCase();
+        if (!cleanCode) {
+            setReferralError('Masukkan kode referral');
+            return;
+        }
+        setReferralLoading(true);
+        setReferralError('');
+        try {
+            const { data, error } = await supabase
+                .from('referral_partners')
+                .select('*')
+                .eq('code', cleanCode)
+                .eq('is_active', true)
+                .maybeSingle();
+            if (error) throw error;
+            if (!data) {
+                setReferralError('Kode referral tidak ditemukan atau tidak aktif');
+                return;
+            }
+            if (data.max_uses && data.current_uses >= data.max_uses) {
+                setReferralError('Batas penggunaan kode referral ini telah habis');
+                return;
+            }
+            // Mutual exclusion: clear other discounts
+            setVoucherData(null);
+            setSelectedDiscount(null);
+            setProofFile(null);
+            setAppliedReferral(data);
+            setReferralInput(cleanCode);
+            setReferralError('');
+        } catch (err) {
+            console.error('Referral verification error:', err);
+            setReferralError('Gagal memverifikasi kode referral');
+        } finally {
+            setReferralLoading(false);
+        }
+    };
+
+    const removeReferral = () => {
+        setAppliedReferral(null);
+        setReferralInput('');
+        setReferralError('');
     };
 
     const [formData, setFormData] = useState({
@@ -100,6 +152,18 @@ const MobileBooking = () => {
         const slotMins = parseTime(slot);
         return bookedSlots.some(b => Math.abs(slotMins - parseTime(b)) < 60);
     };
+
+    // Auto-apply referral code from URL ?ref=CODE on mount
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const refParam = params.get('ref') || params.get('referral');
+        if (refParam) {
+            const codeUpper = refParam.trim().toUpperCase();
+            setReferralInput(codeUpper);
+            verifyReferralCode(codeUpper);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const getNowTimeStr = () => {
         const now = new Date();
@@ -316,6 +380,8 @@ const MobileBooking = () => {
         let basePrice = 0;
         let pointsToDeduct = 0;
         let discountValue = 0;
+        let referralDiscVal = 0;
+        let referralCommVal = 0;
         let chosenServiceObj = null;
         let redeemedItemName = '';
 
@@ -335,7 +401,7 @@ const MobileBooking = () => {
         });
 
         // Find best item to redeem
-        if (usePoints && userPoints > 0) {
+        if (usePoints && userPoints > 0 && !appliedReferral) {
             let bestRedeemableItem = null;
             let highestPrice = -1;
 
@@ -358,7 +424,20 @@ const MobileBooking = () => {
             }
         }
 
-        if (voucherData) {
+        // Referral discount takes full precedence (no stacking)
+        if (appliedReferral) {
+            if (appliedReferral.discount_type === 'percent') {
+                referralDiscVal = Math.floor(((basePrice + addonPrice) * appliedReferral.discount_value) / 100);
+            } else {
+                referralDiscVal = appliedReferral.discount_value;
+            }
+            if (appliedReferral.commission_type === 'percent') {
+                referralCommVal = Math.floor(((basePrice + addonPrice) * appliedReferral.commission_value) / 100);
+            } else {
+                referralCommVal = appliedReferral.commission_value;
+            }
+            discountValue = referralDiscVal;
+        } else if (voucherData) {
             discountValue += voucherData.discountValue;
         }
 
@@ -431,10 +510,13 @@ const MobileBooking = () => {
                         booking_time: formData.time,
                         status: 'pending',
                         total_price: grandTotal,
-                        voucher_discount: voucherData ? voucherData.discountValue : 0,
-                        voucher_program: voucherData ? voucherData.programId : null,
+                        voucher_discount: appliedReferral ? referralDiscVal : (voucherData ? voucherData.discountValue : 0),
+                        voucher_program: appliedReferral ? `REF:${appliedReferral.code}` : (voucherData ? voucherData.programId : null),
                         proof_url: uploadedUrl,
-                        discount_status: discountStatus
+                        discount_status: discountStatus,
+                        referral_code: appliedReferral ? appliedReferral.code : null,
+                        referral_discount: referralDiscVal,
+                        referral_commission: referralCommVal
                     }])
                     .select();
 
@@ -444,6 +526,28 @@ const MobileBooking = () => {
                     setFormError('Booking gagal. Lo terdeteksi punya lebih dari 2 booking aktif dalam 7 hari terakhir yang gak selesai. Nomor lo otomatis di-blacklist.');
                     setLoading(false);
                     return;
+                }
+
+                // Log referral commission
+                if (appliedReferral) {
+                    try {
+                        await supabase.from('referral_commissions').insert([{
+                            partner_id: appliedReferral.id,
+                            code: appliedReferral.code,
+                            booking_id: newBooking[0].id,
+                            customer_name: formData.name,
+                            customer_phone: formData.phone,
+                            order_amount: basePrice + addonPrice,
+                            discount_amount: referralDiscVal,
+                            commission_amount: referralCommVal,
+                            status: 'pending'
+                        }]);
+                        await supabase.from('referral_partners')
+                            .update({ current_uses: (appliedReferral.current_uses || 0) + 1 })
+                            .eq('code', appliedReferral.code);
+                    } catch (refErr) {
+                        console.error('Failed to record referral commission:', refErr);
+                    }
                 }
 
                 if (voucherData && voucherData.claimId) {
@@ -496,11 +600,26 @@ const MobileBooking = () => {
                 // Deduct points if used
                 if (usePoints && pointsToDeduct > 0) {
                     await supabase.from('customers').update({ points: userPoints - pointsToDeduct }).eq('phone_number', formData.phone);
+                }
+                // 5. Record Point Transaction (only if points earned)
+                if (pointsEarned > 0) {
                     await supabase.from('point_transactions').insert([{
-                        phone_number: formData.phone,
-                        amount: -pointsToDeduct,
-                        description: `Redeemed points for free item: ${redeemedItemName}`
+                        phone_number: booking.phone_number,
+                        amount: pointsEarned,
+                        description: `Points from booking #${booking.id.split('-')[0]} (${booking.service_type})`
                     }]);
+                }
+
+                // 6. Mark referral commission as 'verified' if this booking used a referral
+                if (booking.referral_code) {
+                    try {
+                        await supabase.from('referral_commissions')
+                            .update({ status: 'verified' })
+                            .eq('booking_id', booking.id)
+                            .eq('status', 'pending');
+                    } catch (refErr) {
+                        console.error('Failed to verify referral commission:', refErr);
+                    }
                 }
 
                 setSuccessId(newBooking[0].id);
@@ -874,7 +993,12 @@ const MobileBooking = () => {
                         )}
                         <hr className="border-[#333] my-2" />
                         <p className="flex justify-between text-xs"><span className="text-[#a1a1a1]">Subtotal</span> <span>{formatCurrency(subtotal)}</span></p>
-                        {voucherData && (
+                        {appliedReferral ? (
+                            <p className="flex justify-between text-xs text-[#d4af37]">
+                                <span>🤝 Referral ({appliedReferral.code})</span>
+                                <span>-{formatCurrency(appliedReferral.discount_type === 'percent' ? Math.floor(subtotal * appliedReferral.discount_value / 100) : appliedReferral.discount_value)}</span>
+                            </p>
+                        ) : voucherData && (
                             <p className="flex justify-between text-xs text-green-500">
                                 <span>Diskon ({voucherData.programId})</span>
                                 <span>-{formatCurrency(voucherData.discountValue)}</span>
@@ -882,7 +1006,7 @@ const MobileBooking = () => {
                         )}
                         <p className="flex justify-between font-bold text-base border-t border-[#d4af37]/20 pt-2 text-[#d4af37]">
                             <span>Total</span>
-                            <span>{formatCurrency(Math.max(0, subtotal - (voucherData?.discountValue || 0)))}</span>
+                            <span>{formatCurrency(Math.max(0, subtotal - (appliedReferral ? (appliedReferral.discount_type === 'percent' ? Math.floor(subtotal * appliedReferral.discount_value / 100) : appliedReferral.discount_value) : (voucherData?.discountValue || 0))))}</span>
                         </p>
                     </div>
 
@@ -1029,8 +1153,67 @@ const MobileBooking = () => {
                         )
                     )}
 
+                    {/* Referral Code Input Section */}
+                    <div className="bg-[#0d0d0d] border border-[#d4af37]/20 rounded-lg p-4 mt-4">
+                        <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block mb-3">🤝 Kode Referral / Affiliate</span>
+                        {appliedReferral ? (
+                            <div className="bg-[#1a1a0a] border border-[#d4af37]/40 rounded-lg p-3 flex items-center justify-between">
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[#d4af37] font-bold text-sm">{appliedReferral.code}</span>
+                                        <span className="text-[8px] uppercase tracking-widest bg-[#d4af37]/20 text-[#d4af37] px-1.5 py-0.5 rounded">AKTIF</span>
+                                    </div>
+                                    <p className="text-[#a1a1a1] text-xs mt-0.5">{appliedReferral.partner_name}</p>
+                                    <p className="text-[#d4af37] text-xs font-semibold mt-0.5">
+                                        Potongan {appliedReferral.discount_type === 'percent' ? `${appliedReferral.discount_value}%` : new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(appliedReferral.discount_value)} terpasang!
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={removeReferral}
+                                    className="text-xs text-[#a1a1a1] hover:text-red-400 font-bold uppercase tracking-wider pl-2 transition-colors"
+                                >
+                                    Hapus
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                {(selectedDiscount || (voucherData && voucherData.claimId)) && (
+                                    <p className="text-[#a1a1a1] text-xs mb-2">
+                                        ⚠ Diskon/Voucher lain sedang digunakan. Menggunakan kode referral akan menggantikan diskon aktif.
+                                    </p>
+                                )}
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={referralInput}
+                                        onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+                                        onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), verifyReferralCode())}
+                                        placeholder="Masukkan kode referral..."
+                                        className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white text-sm placeholder-[#555] focus:outline-none focus:border-[#d4af37]/60 font-mono"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => verifyReferralCode()}
+                                        disabled={referralLoading || !referralInput.trim()}
+                                        className="px-4 py-2 bg-[#d4af37]/10 hover:bg-[#d4af37]/20 border border-[#d4af37]/30 text-[#d4af37] text-xs font-bold uppercase tracking-wider rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        {referralLoading ? '...' : 'Cek'}
+                                    </button>
+                                </div>
+                                {referralError && (
+                                    <p className="text-red-400 text-xs mt-1">{referralError}</p>
+                                )}
+                            </>
+                        )}
+                    </div>
+
                     <div className="mt-4 mb-2">
-                        {selectedDiscount ? (
+                        {appliedReferral ? (
+                            <div className="bg-[#141414]/90 border border-[#d4af37]/10 rounded-lg p-3 text-center text-xs text-[#a1a1a1]">
+                                Kode referral sedang digunakan. Hapus referral untuk memilih voucher program.
+                            </div>
+                        ) : selectedDiscount ? (
                             <div className="bg-[#141414]/90 border border-[#d4af37]/20 rounded-lg p-4 text-center text-xs text-[#a1a1a1] flex items-center justify-between">
                                 <span>Diskon publik aktif: <strong>{selectedDiscount.name}</strong></span>
                                 <button

@@ -165,6 +165,18 @@ const AdminPanel = () => {
                         description: `Points from booking #${booking.id.split('-')[0]} (${booking.service_type})`
                     }]);
                 }
+
+                // 6. Mark referral commission as 'verified' if this booking used a referral code
+                if (booking.referral_code) {
+                    try {
+                        await supabase.from('referral_commissions')
+                            .update({ status: 'verified' })
+                            .eq('booking_id', booking.id)
+                            .eq('status', 'pending');
+                    } catch (refErr) {
+                        console.error('Failed to verify referral commission:', refErr);
+                    }
+                }
             } catch (err) {
                 console.error("Failed to sync CRM data:", err);
             }
@@ -351,6 +363,13 @@ const AdminPanel = () => {
                                                     <div className="text-xs text-[#555] font-mono mt-1 flex items-center justify-between">
                                                         <span>ID: {booking.id.split('-')[0]} • {booking.phone_number}</span>
                                                     </div>
+                                                    {booking.referral_code && (
+                                                        <div className="mt-1">
+                                                            <span style={{ fontSize: '10px', fontWeight: 'bold', background: 'rgba(212,175,55,0.12)', color: '#d4af37', border: '1px solid rgba(212,175,55,0.3)', borderRadius: '4px', padding: '1px 6px' }}>
+                                                                🤝 Ref: {booking.referral_code}
+                                                            </span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td className="p-6">
