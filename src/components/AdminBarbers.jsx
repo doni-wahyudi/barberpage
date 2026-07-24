@@ -21,7 +21,7 @@ const AdminBarbers = () => {
         bio: '',
         photo_url: '',
         sort_order: 0,
-        max_daily_bookings: 8
+        max_daily_bookings: 100
     });
 
     const fetchBarbers = async () => {
@@ -72,11 +72,11 @@ const AdminBarbers = () => {
                 bio: barber.bio || '',
                 photo_url: barber.photo_url || '',
                 sort_order: barber.sort_order || 0,
-                max_daily_bookings: barber.max_daily_bookings ?? 8
+                max_daily_bookings: barber.max_daily_bookings ?? 100
             });
         } else {
             setEditingBarber(null);
-            setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0, max_daily_bookings: 8 });
+            setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0, max_daily_bookings: 100 });
         }
         setImageFile(null);
         setIsModalOpen(true);
@@ -85,7 +85,7 @@ const AdminBarbers = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingBarber(null);
-        setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0, max_daily_bookings: 8 });
+        setFormData({ name: '', is_active: true, specialty: '', bio: '', photo_url: '', sort_order: 0, max_daily_bookings: 100 });
         setImageFile(null);
     };
 
@@ -129,7 +129,7 @@ const AdminBarbers = () => {
             bio: formData.bio,
             photo_url: finalPhotoUrl || null,
             sort_order: formData.sort_order,
-            max_daily_bookings: parseInt(formData.max_daily_bookings, 10) || 8
+            max_daily_bookings: parseInt(formData.max_daily_bookings, 10) || 100
         };
 
         try {
@@ -299,7 +299,7 @@ const AdminBarbers = () => {
                                             <h3 className="font-bold text-xl mb-1">{barber.name}</h3>
                                             <div className="flex justify-between items-center">
                                                 <p className="text-[#d4af37] text-xs uppercase tracking-[0.2em] font-bold">{barber.specialty || 'Professional Barber'}</p>
-                                                <span className="text-[#a1a1a1] text-xs font-mono">Limit: {barber.max_daily_bookings ?? 8}/hari</span>
+                                                <span className="text-[#a1a1a1] text-xs font-mono">Limit: {barber.max_daily_bookings ?? 100}/hari</span>
                                             </div>
                                         </div>
                                         

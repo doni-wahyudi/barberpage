@@ -331,7 +331,7 @@ const MobileBooking = () => {
                     return;
                 }
                 const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-                const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+                const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
                 if (bookedSlots.length >= maxBookings) {
                     setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
                     return;
@@ -360,7 +360,7 @@ const MobileBooking = () => {
 
         if (formData.type === 'service') {
             const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-            const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+            const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
             if (bookedSlots.length >= maxBookings) {
                 setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
                 setLoading(false);
@@ -677,7 +677,7 @@ const MobileBooking = () => {
 
     const renderStep2Details = () => {
         const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-        const maxBookings = selectedBarberObj?.max_daily_bookings ?? 8;
+        const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
         const isLimitReached = formData.barber && bookedSlots.length >= maxBookings;
 
         return (
