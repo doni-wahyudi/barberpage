@@ -3,21 +3,45 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, ChevronDown, Keyboard } from 'lucide-react';
 
-export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startTime = 10, endTime = 21, interval = 5, onComplete }) => {
-    const generateTimes = () => {
+const parseTimeToMinutes = (t, defaultHour = 0) => {
+    if (typeof t === 'number') return t * 60;
+    if (typeof t === 'string') {
+        if (t.includes(':')) {
+            const [h, m] = t.split(':').map(Number);
+            return (isNaN(h) ? defaultHour : h) * 60 + (isNaN(m) ? 0 : m);
+        }
+        const num = parseInt(t, 10);
+        return isNaN(num) ? defaultHour * 60 : num * 60;
+    }
+    return defaultHour * 60;
+};
+
+export const CircularTimePickerUI = ({
+    value,
+    onChange,
+    bookedSlots = [],
+    startTime = '09:00',
+    endTime = '21:00',
+    interval = 5,
+    bufferMinutes = 30,
+    onComplete
+}) => {
+    const startMinutes = parseTimeToMinutes(startTime, 9);
+    const closeMinutes = parseTimeToMinutes(endTime, 21);
+    const maxBookingMinutes = Math.max(startMinutes, closeMinutes - bufferMinutes);
+
+    const generateTimes = useCallback(() => {
         const times = [];
-        for (let h = startTime; h <= endTime; h++) {
-            let maxMins = 55;
-            if (h === endTime) maxMins = 30;
-            for (let m = 0; m <= maxMins; m += interval) {
-                times.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-            }
+        for (let currentMins = startMinutes; currentMins <= maxBookingMinutes; currentMins += interval) {
+            const h = Math.floor(currentMins / 60);
+            const m = currentMins % 60;
+            times.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
         }
         return times;
-    };
+    }, [startMinutes, maxBookingMinutes, interval]);
 
     const [availableTimes, setAvailableTimes] = useState(generateTimes());
-    const [selectedHour, setSelectedHour] = useState(value ? parseInt(value.split(':')[0]) : null);
+    const [selectedHour, setSelectedHour] = useState(value ? parseInt(value.split(':')[0], 10) : null);
     const [view, setView] = useState(value ? 'minutes' : 'hours');
     const [isDragging, setIsDragging] = useState(false);
     const [dragAngle, setDragAngle] = useState(null);
@@ -29,7 +53,7 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
 
     useEffect(() => {
         setAvailableTimes(generateTimes());
-    }, [startTime, endTime, interval]);
+    }, [generateTimes]);
 
     // Focus hour input when switching to manual mode
     useEffect(() => {
@@ -42,7 +66,7 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
 
     const minutes = [];
     if (selectedHour !== null) {
-        // Always show all 5-minute marks so every slot is pickable
+        // Show 5-minute marks
         for (let m = 0; m < 60; m += interval) {
             minutes.push(m);
         }
@@ -61,8 +85,8 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
 
     const isHourFullyBooked = (h) => {
         const hourPrefix = String(h).padStart(2, '0');
-        const availableInHour = availableTimes.filter(t => t.startsWith(hourPrefix));
-        if (availableInHour.length === 0) return true;
+        const availableInHour = availableTimes.filter(t => t.startsWith(hourPrefix + ':'));
+        if (availableInHour.length === 0) return true; // Disabled if outside operational hours
         return availableInHour.every(slot => isSlotBooked(slot));
     };
 
@@ -97,7 +121,7 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
 
     const snapToMinute = useCallback((angle) => {
         const rawMinute = Math.round(angle / 6) % 60;
-        let closest = minutes[0];
+        let closest = minutes[0] || 0;
         let minDiff = 60;
         for (const m of minutes) {
             const diff = Math.min(Math.abs(rawMinute - m), 60 - Math.abs(rawMinute - m));
@@ -137,7 +161,9 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
     };
 
     const handleMinuteSelect = (m, h = selectedHour) => {
+        if (h === null) return;
         const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        if (!availableTimes.includes(timeStr)) return;
         if (isSlotBooked(timeStr)) return;
         onChange(timeStr);
         setView('hours');
@@ -154,12 +180,11 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
         }
         // Snap minute to nearest valid interval
         const snappedMin = Math.round(m / interval) * interval;
-        const finalMin = snappedMin >= 60 ? 55 : snappedMin;
+        const finalMin = snappedMin >= 60 ? (60 - interval) : snappedMin;
         const timeStr = `${String(h).padStart(2, '0')}:${String(finalMin).padStart(2, '0')}`;
 
-        // Check if within operational hours
-        if (h < startTime || h > endTime) return;
-        if (h === endTime && finalMin > 30) return;
+        // Check if within available operational slots and not booked
+        if (!availableTimes.includes(timeStr)) return;
         if (isSlotBooked(timeStr)) return;
 
         onChange(timeStr);
@@ -194,11 +219,11 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
         } else {
             const m = snapToMinute(angle);
             const timeStr = `${String(selectedHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-            if (!isSlotBooked(timeStr)) {
+            if (availableTimes.includes(timeStr) && !isSlotBooked(timeStr)) {
                 setDragAngle((m / 60) * 360);
             }
         }
-    }, [view, getAngleFromPoint, getDistanceFromCenter, snapToHour, snapToMinute, selectedHour]);
+    }, [view, getAngleFromPoint, getDistanceFromCenter, snapToHour, snapToMinute, selectedHour, availableTimes, isHourFullyBooked, isSlotBooked]);
 
     const handlePointerMove = useCallback((e) => {
         if (!isDragging) return;
@@ -218,9 +243,12 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
         } else {
             const angle = getAngleFromPoint(e.clientX, e.clientY);
             const m = snapToMinute(angle);
-            handleMinuteSelect(m);
+            const timeStr = `${String(selectedHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+            if (availableTimes.includes(timeStr) && !isSlotBooked(timeStr)) {
+                handleMinuteSelect(m);
+            }
         }
-    }, [isDragging, view, selectedHour, getAngleFromPoint, snapToMinute]);
+    }, [isDragging, view, selectedHour, getAngleFromPoint, snapToMinute, isHourFullyBooked, availableTimes, isSlotBooked, interval]);
 
     useEffect(() => {
         if (isDragging) {
@@ -398,7 +426,8 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
                                 {minuteLabels.map((m) => {
                                     const pos = getPosition(m, 60, 105);
                                     const timeStr = `${String(selectedHour).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                                    const isBooked = isSlotBooked(timeStr);
+                                    const isAvailable = availableTimes.includes(timeStr);
+                                    const isBooked = !isAvailable || isSlotBooked(timeStr);
                                     const isSelected = value === timeStr;
                                     const isMajor = m % 15 === 0; // 00, 15, 30, 45 are large
                                     const isMedium = m % 5 === 0 && !isMajor; // 5, 10, 20, 25... medium
@@ -452,7 +481,15 @@ export const CircularTimePickerUI = ({ value, onChange, bookedSlots = [], startT
     );
 };
 
-const CircularTimePicker = ({ value, onChange, bookedSlots = [], startTime = 10, endTime = 21, interval = 5 }) => {
+const CircularTimePicker = ({
+    value,
+    onChange,
+    bookedSlots = [],
+    startTime = '09:00',
+    endTime = '21:00',
+    interval = 5,
+    bufferMinutes = 30
+}) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -493,6 +530,7 @@ const CircularTimePicker = ({ value, onChange, bookedSlots = [], startTime = 10,
                                     startTime={startTime}
                                     endTime={endTime}
                                     interval={interval}
+                                    bufferMinutes={bufferMinutes}
                                     onComplete={() => setIsOpen(false)}
                                 />
                             </motion.div>
@@ -506,3 +544,4 @@ const CircularTimePicker = ({ value, onChange, bookedSlots = [], startTime = 10,
 };
 
 export default CircularTimePicker;
+

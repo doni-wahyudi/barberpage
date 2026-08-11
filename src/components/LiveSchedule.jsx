@@ -177,6 +177,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
 
         const activeBooking = bookings.find(b => {
             if (b.barber_name !== barber) return false;
+            // Only active bookings (pending, confirmed) block a slot. Completed and cancelled are freed up.
+            if (b.status !== 'pending' && b.status !== 'confirmed') return false;
             const bMins = parseTime(b.booking_time.substring(0, 5));
             return bMins <= slotMins && slotMins < bMins + 60;
         });
@@ -185,6 +187,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
 
         const isOverlap = bookings.some(b => {
             if (b.barber_name !== barber) return false;
+            if (b.status !== 'pending' && b.status !== 'confirmed') return false;
             const bMins = parseTime(b.booking_time.substring(0, 5));
             return Math.abs(bMins - slotMins) < 60;
         });

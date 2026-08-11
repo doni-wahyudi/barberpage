@@ -182,7 +182,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         const [endH, endM] = daySchedule.closingHour.split(':').map(Number);
 
         const startMins = startH * 60 + startM;
-        const endMins = (endH * 60 + endM) - 60; // Last slot starts 60 mins before closing
+        const endMins = (endH * 60 + endM) - 30; // Last booking starts 30 mins before closing
 
         if (currentMins < startMins || currentMins > endMins) return false;
 
@@ -195,11 +195,12 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         const d = new Date(dateStr + 'T00:00:00');
         const dayOfWeek = d.getDay();
         const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
-        if (!daySchedule || daySchedule.isHoliday) return { start: 10, end: 21 };
+        if (!daySchedule || daySchedule.isHoliday) return { start: '09:00', end: '21:00' };
         
-        const start = parseInt(daySchedule.openingHour.split(':')[0], 10);
-        const end = parseInt(daySchedule.closingHour.split(':')[0], 10);
-        return { start, end };
+        return {
+            start: daySchedule.openingHour || '09:00',
+            end: daySchedule.closingHour || '21:00'
+        };
     };
 
     const { start: pickerStartTime, end: pickerEndTime } = getPickerHoursForDate(formData.date);
@@ -215,7 +216,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                 .select('booking_time')
                 .eq('booking_date', formData.date)
                 .eq('barber_name', formData.barber)
-                .neq('status', 'cancelled');
+                .in('status', ['pending', 'confirmed']);
 
             if (data) {
                 const booked = data.map(b => b.booking_time.substring(0, 5));
@@ -387,7 +388,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                 .eq('booking_date', formData.date)
                 .eq('booking_time', formData.time)
                 .eq('barber_name', formData.barber)
-                .neq('status', 'cancelled')
+                .in('status', ['pending', 'confirmed'])
                 .limit(1);
 
             if (existing && existing.length > 0) {

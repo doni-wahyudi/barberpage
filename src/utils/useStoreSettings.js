@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 const DEFAULT_SETTINGS = {
-    opening_hour: '10:00',
+    opening_hour: '09:00',
     closing_hour: '21:00',
     daily_hours: [
-        { dayOfWeek: 1, dayName: 'Senin', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 2, dayName: 'Selasa', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: false, openingHour: '10:00', closingHour: '22:00' },
-        { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false, openingHour: '10:00', closingHour: '22:00' }
+        { dayOfWeek: 1, dayName: 'Senin', isHoliday: false, openingHour: '09:00', closingHour: '21:00' },
+        { dayOfWeek: 2, dayName: 'Selasa', isHoliday: false, openingHour: '09:00', closingHour: '21:00' },
+        { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false, openingHour: '09:00', closingHour: '21:00' },
+        { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false, openingHour: '09:00', closingHour: '21:00' },
+        { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false, openingHour: '09:00', closingHour: '21:00' },
+        { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: false, openingHour: '09:00', closingHour: '21:00' },
+        { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false, openingHour: '09:00', closingHour: '21:00' }
     ]
 };
 
