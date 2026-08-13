@@ -44,9 +44,10 @@ CREATE POLICY "Allow authenticated full access on settings"
     WITH CHECK (true);
 
 -- 5. Seed initial row if table is empty
-INSERT INTO public.settings (id, opening_hour, closing_hour, daily_hours)
+INSERT INTO public.settings (id, store_name, opening_hour, closing_hour, daily_hours)
 VALUES (
     1,
+    'Auro Barbershop',
     '09:00',
     '21:00',
     '[
@@ -60,6 +61,7 @@ VALUES (
     ]'::jsonb
 )
 ON CONFLICT (id) DO UPDATE SET
+    store_name = COALESCE(settings.store_name, EXCLUDED.store_name),
     opening_hour = EXCLUDED.opening_hour,
     closing_hour = EXCLUDED.closing_hour,
     daily_hours = EXCLUDED.daily_hours;

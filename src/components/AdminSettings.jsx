@@ -31,6 +31,7 @@ const AdminSettings = () => {
 
     // Store Operating Hours Settings
     const [storeSettings, setStoreSettings] = useState({
+        store_name: 'Auro Barbershop',
         opening_hour: '09:00',
         closing_hour: '21:00',
         daily_hours: DEFAULT_DAILY_HOURS
@@ -77,6 +78,7 @@ const AdminSettings = () => {
                         }
                     }
                     setStoreSettings({
+                        store_name: storeData.store_name || 'Auro Barbershop',
                         opening_hour: storeData.opening_hour || '09:00',
                         closing_hour: storeData.closing_hour || '21:00',
                         daily_hours: parsedHours || DEFAULT_DAILY_HOURS
@@ -141,6 +143,7 @@ const AdminSettings = () => {
                 .from('settings')
                 .upsert({
                     id: 1,
+                    store_name: storeSettings.store_name || 'Auro Barbershop',
                     opening_hour: storeSettings.opening_hour,
                     closing_hour: storeSettings.closing_hour,
                     daily_hours: storeSettings.daily_hours,
