@@ -340,14 +340,6 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             return;
         }
 
-        const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-        const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
-        if (bookedSlots.length >= maxBookings) {
-            setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
-            setLoading(false);
-            return;
-        }
-
         try {
             let uploadedUrl = null;
             let discountStatus = 'none';
@@ -496,9 +488,6 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     };
 
     const chosenServiceObj = servicesData.find(s => s.name === formData.service);
-    const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-    const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
-    const isLimitReached = formData.barber && bookedSlots.length >= maxBookings;
 
     return (
         <AnimatePresence>
@@ -678,11 +667,6 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                 <option key={b.id || b.name} value={b.name}>{b.name}</option>
                                             ))}
                                         </select>
-                                        {formData.barber && isLimitReached && (
-                                            <p className="text-red-500 text-xs mt-2 border border-red-500/30 p-2 rounded bg-red-500/10">
-                                                ⚠️ Capster {formData.barber} sudah penuh hari ini (Maks. {maxBookings} booking). Silakan pilih tanggal atau capster lain.
-                                            </p>
-                                        )}
                                     </div>
 
                                     {/* Summary Box */}
@@ -929,9 +913,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                     </div>
 
                                     <button
-                                        disabled={loading || isLimitReached}
+                                        disabled={loading}
                                         type="submit"
-                                        className={`gold-button w-full flex items-center justify-center gap-2 ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        className="gold-button w-full flex items-center justify-center gap-2"
                                     >
                                         {loading ? (
                                             <motion.div

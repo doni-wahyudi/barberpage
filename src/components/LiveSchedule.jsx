@@ -95,7 +95,7 @@ const LiveSchedule = ({ onSelectSlot }) => {
     };
 
     const timeSlots = getSlotsForDate(selectedDate);
-    const TOTAL_CAPACITY = Math.floor(Math.max(barbers.length, 1) * (timeSlots.length / 2));
+    const TOTAL_CAPACITY = Math.max(barbers.length, 1) * timeSlots.length;
     const today = new Date().toISOString().split('T')[0];
     const isToday = selectedDate === today;
 
@@ -156,8 +156,8 @@ const LiveSchedule = ({ onSelectSlot }) => {
         return () => clearInterval(interval);
     }, [selectedDate]);
 
-    const bookedCount = bookings.length;
-    const trafficPercent = TOTAL_CAPACITY > 0 ? Math.round((bookedCount / TOTAL_CAPACITY) * 100) : 0;
+    const bookedCount = bookings.filter(b => b.status === 'pending' || b.status === 'confirmed').length;
+    const trafficPercent = TOTAL_CAPACITY > 0 ? Math.min(100, Math.round((bookedCount / TOTAL_CAPACITY) * 100)) : 0;
 
     const getTrafficLabel = () => {
         if (trafficPercent < 30) return { text: 'Sepi', color: 'text-green-400', barColor: 'bg-green-400' };

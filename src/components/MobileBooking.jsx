@@ -331,12 +331,6 @@ const MobileBooking = () => {
                     setFormError('Please select all required options to proceed.');
                     return;
                 }
-                const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-                const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
-                if (bookedSlots.length >= maxBookings) {
-                    setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
-                    return;
-                }
             }
         }
         setStep(prev => prev + 1);
@@ -357,16 +351,6 @@ const MobileBooking = () => {
         if (!validatePhone(formData.phone)) {
             setFormError('Please enter a valid phone number starting with 08 or 628.');
             return;
-        }
-
-        if (formData.type === 'service') {
-            const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-            const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
-            if (bookedSlots.length >= maxBookings) {
-                setFormError(`Mohon maaf, capster ${formData.barber} sudah penuh (Maks. ${maxBookings} booking) untuk tanggal ini. Silakan pilih tanggal atau capster lain.`);
-                setLoading(false);
-                return;
-            }
         }
 
         if (formData.type === 'service' && isSlotBooked(formData.time)) {
@@ -677,10 +661,6 @@ const MobileBooking = () => {
     );
 
     const renderStep2Details = () => {
-        const selectedBarberObj = barbers.find(b => b.name === formData.barber);
-        const maxBookings = selectedBarberObj?.max_daily_bookings ?? 100;
-        const isLimitReached = formData.barber && bookedSlots.length >= maxBookings;
-
         return (
             <motion.div
             key="step2"
@@ -723,11 +703,6 @@ const MobileBooking = () => {
                     <option value="" disabled>Pilih Kapster</option>
                     {barbers.map(b => <option key={b.id || b.name} value={b.name}>{b.name}</option>)}
                 </select>
-                {formData.barber && isLimitReached && (
-                    <p className="text-red-500 text-xs mt-2 border border-red-500/30 p-2 rounded bg-red-500/10">
-                        ⚠️ Capster {formData.barber} sudah penuh hari ini (Maks. {maxBookings} booking). Silakan pilih tanggal atau capster lain.
-                    </p>
-                )}
 
                 <select
                     className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] transition-colors appearance-none"
@@ -777,9 +752,8 @@ const MobileBooking = () => {
             </div>
 
             <button 
-                disabled={isLimitReached} 
                 onClick={handleNext} 
-                className={`gold-button w-full mt-6 ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className="gold-button w-full mt-6"
             >
                 Lanjut ke Detail
             </button>
