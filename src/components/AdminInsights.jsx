@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity, Trash2, Edit, X, Save, CreditCard, ShoppingBag, Award } from 'lucide-react';
+import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity, Trash2, Edit, X, Save, CreditCard, ShoppingBag, Award, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
@@ -735,12 +735,18 @@ const AdminInsights = () => {
                             {activeTab === 'reports' ? 'Laporan Bisnis' : activeTab === 'crm' ? 'Customer CRM' : 'Daftar Hitam (Blacklist)'} 
                             <TrendingUp className="text-[#d4af37]" size={32} />
                         </h1>
-                        <div className="flex gap-4 mt-4">
+                        <div className="flex flex-wrap gap-3 mt-4">
                             <button
                                 onClick={() => setActiveTab('reports')}
                                 className={`px-4 py-2 text-xs uppercase tracking-widest font-bold border transition-colors rounded ${activeTab === 'reports' ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#111] text-[#a1a1a1] border-[#333] hover:border-[#d4af37]/50 hover:text-[#d4af37]'}`}
                             >
                                 Laporan Bisnis
+                            </button>
+                            <button
+                                onClick={() => navigate('/_studio_admin/reports')}
+                                className="px-4 py-2 text-xs uppercase tracking-widest font-bold border transition-all rounded bg-[#d4af37]/10 text-[#d4af37] border-[#d4af37]/40 hover:bg-[#d4af37] hover:text-black flex items-center gap-1.5 shadow-sm"
+                            >
+                                <FileSpreadsheet size={14} /> Laporan Transaksi (Spreadsheet)
                             </button>
                             <button
                                 onClick={() => setActiveTab('crm')}

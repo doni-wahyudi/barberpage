@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star, Image as ImageIcon, Tag, MessageSquareText, Edit, Phone } from 'lucide-react';
+import { LogOut, RefreshCw, X, Check, Search, Calendar as CalendarIcon, Package, Users, Settings, Scissors, UserCog, Star, Image as ImageIcon, Tag, MessageSquareText, Edit, Phone, FileSpreadsheet } from 'lucide-react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useNavigate } from 'react-router-dom';
@@ -253,6 +253,7 @@ const AdminPanel = () => {
     }
 
     const navItems = [
+        { label: 'Laporan Keuangan', icon: FileSpreadsheet, path: '/_studio_admin/reports' },
         { label: 'Kelola Toko', icon: Package, path: '/_studio_admin/products' },
         { label: 'Layanan', icon: Scissors, path: '/_studio_admin/services' },
         { label: 'Kapster', icon: UserCog, path: '/_studio_admin/capsters' },
@@ -267,7 +268,7 @@ const AdminPanel = () => {
         <div className="min-h-screen bg-[#0a0a0a] text-white pt-8 pb-24 px-4 sm:px-6 relative">
             <div className="max-w-7xl mx-auto">
                 <header className="mb-10 space-y-8">
-                    <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-9 gap-3">
+                    <nav className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 gap-2.5">
                         {navItems.map(({ label, icon: Icon, path }) => (
                             <button
                                 key={path}

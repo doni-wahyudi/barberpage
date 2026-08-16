@@ -19,6 +19,7 @@ import AdminSettings from './components/AdminSettings';
 import AdminServices from './components/AdminServices';
 import AdminBarbers from './components/AdminBarbers';
 import AdminFeedback from './components/AdminFeedback';
+import AdminReports from './components/AdminReports';
 import { Routes, Route } from 'react-router-dom';
 
 import AdminPanel from './components/AdminPanel';
@@ -164,6 +165,7 @@ function App() {
                         <Route path="/_studio_admin" element={<AdminPanel />} />
                         <Route path="/_studio_admin/login" element={<AdminLogin />} />
                         <Route path="/_studio_admin/insights" element={<AdminInsights />} />
+                        <Route path="/_studio_admin/reports" element={<AdminReports />} />
                         <Route path="/_studio_admin/feedback" element={<AdminFeedback />} />
                         <Route path="/_studio_admin/products" element={<AdminProducts />} />
                         <Route path="/_studio_admin/services" element={<AdminServices />} />
