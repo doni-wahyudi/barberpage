@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
+import { buildUnifiedTransactions, normalizePhone } from '../utils/reportUtils';
 import { Users, Search, Loader2, ArrowLeft, Star, Clock, Calendar, TrendingUp, DollarSign, Activity, Trash2, Edit, X, Save, CreditCard, ShoppingBag, Award, FileSpreadsheet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -326,33 +327,38 @@ const AdminInsights = () => {
                 setAllBookings(bookingsData || []);
                 setProductsList(productsData || []);
 
-                // 5. Build per-customer stats from ALL completed bookings
+                // 5. Build per-customer stats from unified deduplicated transactions
+                const allInitialUnified = buildUnifiedTransactions(transactionData || [], bookingsData || [], customerData || [], []);
                 const statsMap = {};
-                (bookingsData || []).filter(b => b.status === 'completed').forEach(b => {
-                    const phone = b.phone_number;
+                allInitialUnified.forEach(r => {
+                    const phone = r.phone_number;
                     if (!phone) return;
-                    if (!statsMap[phone]) {
-                        statsMap[phone] = { total_visits: 0, last_visit: null };
+                    const normPhone = normalizePhone(phone);
+                    if (!statsMap[normPhone]) {
+                        statsMap[normPhone] = { total_visits: 0, last_visit: null };
                     }
-                    statsMap[phone].total_visits += 1;
-                    if (!statsMap[phone].last_visit || b.booking_date > statsMap[phone].last_visit) {
-                        statsMap[phone].last_visit = b.booking_date;
+                    statsMap[normPhone].total_visits += 1;
+                    if (!statsMap[normPhone].last_visit || r.date > statsMap[normPhone].last_visit) {
+                        statsMap[normPhone].last_visit = r.date;
                     }
                 });
 
-                // 6. Merge computed stats into customers, prefer booking-derived values
-                const enriched = (customerData || []).map(c => ({
-                    ...c,
-                    total_visits: statsMap[c.phone_number]?.total_visits ?? c.total_visits ?? 0,
-                    last_visit: statsMap[c.phone_number]?.last_visit ?? c.last_visit ?? null,
-                }));
+                // 6. Merge computed stats into customers, prefer unified transaction-derived values
+                const enriched = (customerData || []).map(c => {
+                    const normPhone = normalizePhone(c.phone_number);
+                    return {
+                        ...c,
+                        total_visits: statsMap[normPhone]?.total_visits ?? c.total_visits ?? 0,
+                        last_visit: statsMap[normPhone]?.last_visit ?? c.last_visit ?? null,
+                    };
+                });
 
                 // Sort by computed visits descending
                 enriched.sort((a, b) => (b.total_visits || 0) - (a.total_visits || 0));
                 setCustomers(enriched);
                 setFilteredCustomers(enriched);
 
-                // 7. CRM Chart data: filter to last 30 days
+                // 7. CRM Chart data: filter unified records to last 30 days
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                 const cutoff = thirtyDaysAgo.toISOString().split('T')[0];
@@ -361,11 +367,15 @@ const AdminInsights = () => {
                 const serviceMap = {};
                 const barberMap = {};
 
-                (bookingsData || []).filter(b => b.status === 'completed' && b.booking_date >= cutoff).forEach(b => {
-                    const date = b.booking_date;
-                    revenueMap[date] = (revenueMap[date] || 0) + (b.total_price || 0);
-                    serviceMap[b.service_type] = (serviceMap[b.service_type] || 0) + 1;
-                    barberMap[b.barber_name] = (barberMap[b.barber_name] || 0) + 1;
+                allInitialUnified.filter(r => r.date >= cutoff).forEach(r => {
+                    const date = r.date;
+                    revenueMap[date] = (revenueMap[date] || 0) + (r.nominal || 0);
+                    if (r.service_name && r.service_name !== 'Produk / POS') {
+                        serviceMap[r.service_name] = (serviceMap[r.service_name] || 0) + 1;
+                    }
+                    if (r.barber_name && r.barber_name !== 'Kasir / Studio') {
+                        barberMap[r.barber_name] = (barberMap[r.barber_name] || 0) + 1;
+                    }
                 });
 
                 const revenueData = Object.keys(revenueMap).sort().map(date => ({
@@ -385,7 +395,7 @@ const AdminInsights = () => {
 
                 setStats({ revenueData, serviceData, barberData });
 
-                // 4. Fetch WhatsApp Follow-Up Template
+                // 8. Fetch WhatsApp Follow-Up Template
                 const { data: settingsData } = await supabase
                     .from('app_settings')
                     .select('whatsapp_followup_template')
@@ -422,9 +432,14 @@ const AdminInsights = () => {
         }
     };
 
-    // Reports Aggregator
-    const reportsData = React.useMemo(() => {
-        if (!allTransactions.length) {
+    // Unified unique transaction dataset
+    const allUnifiedRecords = useMemo(() => {
+        return buildUnifiedTransactions(allTransactions, allBookings, customers, servicesList);
+    }, [allTransactions, allBookings, customers, servicesList]);
+
+    // Reports Aggregator (Laporan Bisnis)
+    const reportsData = useMemo(() => {
+        if (!allUnifiedRecords.length) {
             return {
                 totalVisits: 0,
                 bookingVisits: 0,
@@ -444,41 +459,9 @@ const AdminInsights = () => {
             };
         }
 
-        // Helper to check if item is a service
-        const isServiceItem = (item) => {
-            const pid = item.productId;
-            if (pid === null || pid === undefined) {
-                const name = (item.productName || '').toLowerCase();
-                if (servicesList && servicesList.some(s => name.includes(s.name.toLowerCase()))) return true;
-                return name.includes('mullet') || name.includes('cut') || name.includes('crop') || name.includes('fade') || name.includes('part') || name.includes('dewasa') || name.includes('anak') || name.includes('kustom') || name.includes('cukur');
-            }
-            const isNum = typeof pid === 'number' || (!isNaN(Number(pid)) && String(pid).trim() !== '' && !pid.toString().includes('-'));
-            return isNum;
-        };
-
-        const customerPhoneMap = {};
-        customers.forEach(c => {
-            customerPhoneMap[c.id] = c.phone_number;
-        });
-
-        const findMatchingBooking = (tx) => {
-            const txDate = tx.created_at.substring(0, 10);
-            const phone = customerPhoneMap[tx.customer_id] || '';
-            const name = (tx.customer_name || '').toLowerCase().trim();
-            
-            return allBookings.find(b => {
-                if (b.status !== 'completed') return false;
-                if (b.booking_date !== txDate) return false;
-                if (phone && b.phone_number === phone) return true;
-                if (name && b.customer_name.toLowerCase().trim() === name) return true;
-                return false;
-            });
-        };
-
-        // Filter data by dates
-        const filteredTxs = allTransactions.filter(tx => {
-            const txDate = tx.created_at.substring(0, 10);
-            return txDate >= dateFrom && txDate <= dateTo;
+        // Filter data by active dates
+        const filteredRecords = allUnifiedRecords.filter(r => {
+            return r.date >= dateFrom && r.date <= dateTo;
         });
 
         const filteredNewCusts = customers.filter(c => {
@@ -487,16 +470,14 @@ const AdminInsights = () => {
             return d >= dateFrom && d <= dateTo;
         });
 
-        // 1. Client counts (Breakdown: Booking vs Walk-in)
         let bookingVisits = 0;
         let walkInVisits = 0;
-
-        // 2. Revenue (Cukur vs Produk)
         let serviceRevenue = 0;
         let productRevenue = 0;
         let discounts = 0;
+        let grossRevenue = 0;
+        let netRevenue = 0;
 
-        // 3. Payment channels
         const paymentsMap = {
             'cash': 0,
             'qris': 0,
@@ -506,8 +487,9 @@ const AdminInsights = () => {
             'lainnya': 0
         };
 
-        // 4. Capster weekly headcounts
         const capsterWeeks = {};
+        const servicePopularity = {};
+        const trendMap = {};
 
         // Helper to get week start date (Monday YYYY-MM-DD)
         const getMondayDateStr = (dateStr) => {
@@ -518,69 +500,43 @@ const AdminInsights = () => {
             return monday.toISOString().split('T')[0];
         };
 
-        // 5. Popular services
-        const servicePopularity = {};
-
-        // Trend Map
-        const trendMap = {};
-
-        filteredTxs.forEach(tx => {
-            const txDate = tx.created_at.substring(0, 10);
-            const isBooking = !!findMatchingBooking(tx);
-            if (isBooking) {
+        filteredRecords.forEach(r => {
+            if (r.is_booking) {
                 bookingVisits++;
             } else {
                 walkInVisits++;
             }
 
-            discounts += (tx.discount_total || 0);
-            
-            let pm = (tx.payment_method || 'cash').toLowerCase().trim();
-            if (pm.includes('cash')) pm = 'cash';
+            grossRevenue += r.subtotal;
+            discounts += r.discount;
+            netRevenue += r.nominal;
+            serviceRevenue += r.service_revenue;
+            productRevenue += r.product_revenue;
+
+            let pm = (r.payment_method || 'Tunai').toLowerCase().trim();
+            if (pm.includes('cash') || pm.includes('tunai')) pm = 'cash';
             else if (pm.includes('qris')) pm = 'qris';
             else if (pm.includes('transfer')) pm = 'transfer';
             else if (pm.includes('gopay')) pm = 'gopay';
             else if (pm.includes('ovo')) pm = 'ovo';
             else pm = 'lainnya';
 
-            paymentsMap[pm] += (tx.grand_total || 0);
+            paymentsMap[pm] += r.nominal;
 
-            if (tx.items && Array.isArray(tx.items)) {
-                tx.items.forEach(item => {
-                    const itemSubtotal = item.subtotal || (item.price * item.quantity) || 0;
-                    const isService = isServiceItem(item);
-
-                    if (isService) {
-                        serviceRevenue += itemSubtotal;
-
-                        const serviceName = (item.productName || '').replace(/\s*\([^)]+\)\s*$/, '').trim();
-                        if (serviceName) {
-                            servicePopularity[serviceName] = (servicePopularity[serviceName] || 0) + (item.quantity || 1);
-                        }
-
-                        let barber = 'Tidak Tercatat';
-                        const match = (item.productName || '').match(/\(([^)]+)\)$/);
-                        if (match) {
-                            barber = match[1].trim();
-                        } else {
-                            const matchingBook = findMatchingBooking(tx);
-                            if (matchingBook && matchingBook.barber_name) {
-                                barber = matchingBook.barber_name;
-                            }
-                        }
-
-                        const weekStart = getMondayDateStr(txDate);
-                        if (!capsterWeeks[weekStart]) {
-                            capsterWeeks[weekStart] = {};
-                        }
-                        capsterWeeks[weekStart][barber] = (capsterWeeks[weekStart][barber] || 0) + (item.quantity || 1);
-                    } else {
-                        productRevenue += itemSubtotal;
-                    }
-                });
+            // Popular Services & Capster Headcount
+            const barber = r.barber_name || 'Tidak Tercatat';
+            const sName = r.service_name || 'Haircut';
+            if (sName && sName !== 'Produk / POS') {
+                servicePopularity[sName] = (servicePopularity[sName] || 0) + 1;
             }
 
-            trendMap[txDate] = (trendMap[txDate] || 0) + (tx.grand_total || 0);
+            const weekStart = getMondayDateStr(r.date);
+            if (!capsterWeeks[weekStart]) {
+                capsterWeeks[weekStart] = {};
+            }
+            capsterWeeks[weekStart][barber] = (capsterWeeks[weekStart][barber] || 0) + 1;
+
+            trendMap[r.date] = (trendMap[r.date] || 0) + r.nominal;
         });
 
         const paymentMethodsData = Object.keys(paymentsMap)
@@ -614,11 +570,8 @@ const AdminInsights = () => {
             revenue: trendMap[date]
         }));
 
-        const grossRevenue = serviceRevenue + productRevenue;
-        const netRevenue = grossRevenue - discounts;
-
         return {
-            totalVisits: filteredTxs.length,
+            totalVisits: filteredRecords.length,
             bookingVisits,
             walkInVisits,
             grossRevenue,
@@ -634,7 +587,7 @@ const AdminInsights = () => {
             revenueTrend,
             uniqueBarbers
         };
-    }, [allTransactions, allBookings, customers, dateFrom, dateTo, servicesList]);
+    }, [allUnifiedRecords, customers, dateFrom, dateTo]);
 
     // Handle search filter and sorting
     useEffect(() => {

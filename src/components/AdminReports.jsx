@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
+import { buildUnifiedTransactions } from '../utils/reportUtils';
 import { 
     FileSpreadsheet, 
     Download, 
@@ -41,6 +42,7 @@ const AdminReports = () => {
     // Raw data states
     const [bookings, setBookings] = useState([]);
     const [transactions, setTransactions] = useState([]);
+    const [customersList, setCustomersList] = useState([]);
     const [barbersList, setBarbersList] = useState([]);
     const [servicesList, setServicesList] = useState([]);
 
@@ -169,7 +171,7 @@ const AdminReports = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch only finished/completed bookings
+            // 1. Fetch finished/completed bookings
             const { data: bookingsData, error: bookErr } = await supabase
                 .from('bookings')
                 .select('*')
@@ -178,34 +180,34 @@ const AdminReports = () => {
 
             if (bookErr) throw bookErr;
 
-            // 2. Fetch only completed POS transactions (if table exists)
+            // 2. Fetch completed POS transactions
             const { data: txData, error: txErr } = await supabase
                 .from('transactions')
                 .select('*')
                 .eq('status', 'completed')
                 .order('created_at', { ascending: false });
 
-            // Ignore table missing error for transactions if not configured
-            if (!txErr && txData) {
-                setTransactions(txData);
-            } else {
-                setTransactions([]);
-            }
+            // 3. Fetch customers for CRM contact matching
+            const { data: custData, error: custErr } = await supabase
+                .from('customers')
+                .select('*');
 
-            // 3. Fetch active barbers
+            // 4. Fetch active barbers
             const { data: bData } = await supabase
                 .from('barbers')
                 .select('name')
                 .eq('is_active', true);
-            if (bData) setBarbersList(bData.map(b => b.name));
 
-            // 4. Fetch services
+            // 5. Fetch services
             const { data: sData } = await supabase
                 .from('services')
                 .select('name, price');
-            if (sData) setServicesList(sData || []);
 
             setBookings(bookingsData || []);
+            setTransactions(txData || []);
+            setCustomersList(custData || []);
+            if (bData) setBarbersList(bData.map(b => b.name));
+            if (sData) setServicesList(sData || []);
         } catch (err) {
             console.error('Error fetching report data:', err);
         } finally {
@@ -213,93 +215,10 @@ const AdminReports = () => {
         }
     };
 
-    // Unify & normalize all finished transactions into a single spreadsheet dataset
+    // Unify & deduplicate all finished transactions into a single spreadsheet dataset
     const unifiedFinishedRecords = useMemo(() => {
-        const records = [];
-
-        // 1. Map finished bookings
-        bookings.forEach(b => {
-            let paymentMethod = 'Tunai';
-            if (b.payment_method) {
-                const pm = b.payment_method.toLowerCase();
-                if (pm.includes('qris')) paymentMethod = 'QRIS';
-                else if (pm.includes('transfer')) paymentMethod = 'Transfer';
-                else paymentMethod = 'Tunai';
-            } else if (b.proof_url) {
-                paymentMethod = 'QRIS';
-            }
-
-            const nominal = Number(b.total_price) || 0;
-            const dateStr = b.booking_date || (b.created_at ? b.created_at.substring(0, 10) : '');
-            const timeStr = b.booking_time ? b.booking_time.substring(0, 5) : '';
-
-            // Build note / keterangan
-            const notesList = [];
-            if (b.voucher_program) notesList.push(`Voucher: ${b.voucher_program}`);
-            if (b.referral_code) notesList.push(`Ref: ${b.referral_code}`);
-            if (b.notes) notesList.push(b.notes);
-
-            records.push({
-                id: b.id,
-                source: 'booking',
-                date: dateStr,
-                time: timeStr,
-                customer_name: b.customer_name || 'Pelanggan Anonim',
-                phone_number: b.phone_number || '',
-                nominal: nominal,
-                payment_method: paymentMethod,
-                barber_name: b.barber_name || 'Capster',
-                service_name: b.service_type || 'Haircut',
-                status: 'completed',
-                notes: notesList.join(' | ') || '-',
-                raw_created_at: b.created_at || `${dateStr}T${timeStr || '00:00'}:00`
-            });
-        });
-
-        // 2. Map finished POS transactions (avoid double-counting if linked to booking)
-        const bookingIdsSet = new Set(bookings.map(b => b.id));
-        transactions.forEach(tx => {
-            if (tx.booking_id && bookingIdsSet.has(tx.booking_id)) {
-                // already covered by booking entry
-                return;
-            }
-
-            let paymentMethod = 'Tunai';
-            const pm = (tx.payment_method || 'cash').toLowerCase();
-            if (pm.includes('qris')) paymentMethod = 'QRIS';
-            else if (pm.includes('transfer')) paymentMethod = 'Transfer';
-            else paymentMethod = 'Tunai';
-
-            const nominal = Number(tx.grand_total) || 0;
-            const dateStr = tx.created_at ? tx.created_at.substring(0, 10) : '';
-            const timeStr = tx.created_at ? new Date(tx.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
-
-            let serviceName = 'Produk / POS';
-            let barberName = 'Kasir / Studio';
-
-            if (tx.items && Array.isArray(tx.items) && tx.items.length > 0) {
-                serviceName = tx.items.map(i => i.productName || i.name || 'Item').join(', ');
-            }
-
-            records.push({
-                id: tx.id,
-                source: 'pos',
-                date: dateStr,
-                time: timeStr,
-                customer_name: tx.customer_name || 'Pelanggan Walk-in',
-                phone_number: tx.customer_phone || tx.phone_number || '',
-                nominal: nominal,
-                payment_method: paymentMethod,
-                barber_name: tx.barber_name || barberName,
-                service_name: serviceName,
-                status: 'completed',
-                notes: tx.notes || (tx.discount_total ? `Diskon: Rp ${tx.discount_total.toLocaleString('id-ID')}` : '-'),
-                raw_created_at: tx.created_at || `${dateStr}T00:00:00`
-            });
-        });
-
-        return records;
-    }, [bookings, transactions]);
+        return buildUnifiedTransactions(transactions, bookings, customersList, servicesList);
+    }, [transactions, bookings, customersList, servicesList]);
 
     // Apply active filters (Date Range, Payment Method, Barber, Search Term, Sorting)
     const filteredRecords = useMemo(() => {
@@ -980,7 +899,7 @@ const AdminReports = () => {
                                         const rowNumber = (currentPage - 1) * pageSize + idx + 1;
                                         return (
                                             <tr 
-                                                key={row.id || idx}
+                                                key={row.unique_key || row.id || idx}
                                                 className="hover:bg-[#141414] transition-colors"
                                             >
                                                 {/* No */}

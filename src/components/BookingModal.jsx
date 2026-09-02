@@ -1,6 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, User, Phone, CheckCircle } from 'lucide-react';
+import { 
+    X, 
+    Calendar, 
+    Clock, 
+    User, 
+    Phone, 
+    CheckCircle, 
+    Scissors, 
+    Gift, 
+    Tag, 
+    Percent, 
+    Award, 
+    ChevronDown, 
+    ChevronUp, 
+    Check, 
+    Sparkles, 
+    Loader2, 
+    AlertCircle, 
+    ExternalLink 
+} from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import CircularTimePicker from './CircularTimePicker';
 import VoucherClaim from './VoucherClaim';
@@ -13,9 +32,14 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     const [bookedSlots, setBookedSlots] = useState([]);
     const [formError, setFormError] = useState('');
     
+    // Service Sort Order ('popular' | 'name' | 'default')
+    const [serviceSort, setServiceSort] = useState('popular');
+    const [pickerMode, setPickerMode] = useState('grid'); // 'grid' | 'dial'
+    const [activePromoTab, setActivePromoTab] = useState('discount'); // Default expanded to 'discount'
+
     const [formData, setFormData] = useState({
-        name: '',
-        phone: '',
+        name: localStorage.getItem('auro_name') || '',
+        phone: localStorage.getItem('auro_phone') || '',
         service: '',
         barber: '',
         date: (() => {
@@ -26,7 +50,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                 { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false },
                 { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false },
                 { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false },
-                { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true },
+                { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: false },
                 { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false }
             ];
             let d = new Date(todayStr + 'T00:00:00');
@@ -45,6 +69,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         })(),
         time: ''
     });
+
     const [services, setServices] = useState([]);
     const [servicesData, setServicesData] = useState([]);
     const [barbers, setBarbers] = useState([]);
@@ -137,7 +162,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     };
 
     const formatCurrency = (val) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val || 0);
     };
 
     const validatePhone = (phone) => {
@@ -152,8 +177,9 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     };
 
     const parseTime = (t) => {
+        if (!t) return 0;
         const [h, m] = t.split(':').map(Number);
-        return h * 60 + m;
+        return (h || 0) * 60 + (m || 0);
     };
 
     const isSlotBooked = (slot) => {
@@ -175,14 +201,14 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         const currentMins = now.getHours() * 60 + now.getMinutes();
 
         const dayOfWeek = now.getDay();
-        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        const daySchedule = settings?.daily_hours?.find(ds => ds.dayOfWeek === dayOfWeek);
         if (!daySchedule || daySchedule.isHoliday) return false;
 
-        const [startH, startM] = daySchedule.openingHour.split(':').map(Number);
-        const [endH, endM] = daySchedule.closingHour.split(':').map(Number);
+        const [startH, startM] = (daySchedule.openingHour || '09:00').split(':').map(Number);
+        const [endH, endM] = (daySchedule.closingHour || '21:00').split(':').map(Number);
 
         const startMins = startH * 60 + startM;
-        const endMins = (endH * 60 + endM) - 30; // Last booking starts 30 mins before closing
+        const endMins = (endH * 60 + endM) - 30;
 
         if (currentMins < startMins || currentMins > endMins) return false;
 
@@ -194,7 +220,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     const getPickerHoursForDate = (dateStr) => {
         const d = new Date(dateStr + 'T00:00:00');
         const dayOfWeek = d.getDay();
-        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        const daySchedule = settings?.daily_hours?.find(ds => ds.dayOfWeek === dayOfWeek);
         if (!daySchedule || daySchedule.isHoliday) return { start: '09:00', end: '21:00' };
         
         return {
@@ -205,13 +231,28 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
 
     const { start: pickerStartTime, end: pickerEndTime } = getPickerHoursForDate(formData.date);
 
+    // Generate quick time slot pill options based on store opening hours
+    const availableTimeSlots = useMemo(() => {
+        const [startH, startM] = pickerStartTime.split(':').map(Number);
+        const [endH, endM] = pickerEndTime.split(':').map(Number);
+        const startMins = startH * 60 + startM;
+        const endMins = endH * 60 + endM;
+
+        const slots = [];
+        for (let m = startMins; m <= endMins - 30; m += 30) {
+            const h = Math.floor(m / 60);
+            const mins = m % 60;
+            slots.push(`${String(h).padStart(2, '0')}:${String(mins).padStart(2, '0')}`);
+        }
+        return slots;
+    }, [pickerStartTime, pickerEndTime]);
 
     // Fetch existing bookings for selected date and barber
     useEffect(() => {
         const fetchBookings = async () => {
             if (!formData.date || !formData.barber) return;
 
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('bookings')
                 .select('booking_time')
                 .eq('booking_date', formData.date)
@@ -231,33 +272,12 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
     useEffect(() => {
         if (!isOpen) {
             setFormData({
-                name: '',
-                phone: '',
+                name: localStorage.getItem('auro_name') || '',
+                phone: localStorage.getItem('auro_phone') || '',
                 service: '',
                 barber: '',
                 date: (() => {
                     const todayStr = new Date().toISOString().split('T')[0];
-                    const defaultDailyHours = [
-                        { dayOfWeek: 1, dayName: 'Senin', isHoliday: false },
-                        { dayOfWeek: 2, dayName: 'Selasa', isHoliday: false },
-                        { dayOfWeek: 3, dayName: 'Rabu', isHoliday: false },
-                        { dayOfWeek: 4, dayName: 'Kamis', isHoliday: false },
-                        { dayOfWeek: 5, dayName: 'Jumat', isHoliday: false },
-                        { dayOfWeek: 6, dayName: 'Sabtu', isHoliday: true },
-                        { dayOfWeek: 0, dayName: 'Minggu', isHoliday: false }
-                    ];
-                    let d = new Date(todayStr + 'T00:00:00');
-                    for (let i = 0; i < 7; i++) {
-                        const dayOfWeek = d.getDay();
-                        const daySchedule = defaultDailyHours.find(ds => ds.dayOfWeek === dayOfWeek);
-                        if (daySchedule && !daySchedule.isHoliday) {
-                            const year = d.getFullYear();
-                            const month = String(d.getMonth() + 1).padStart(2, '0');
-                            const day = String(d.getDate()).padStart(2, '0');
-                            return `${year}-${month}-${day}`;
-                        }
-                        d.setDate(d.getDate() + 1);
-                    }
                     return todayStr;
                 })(),
                 time: ''
@@ -266,6 +286,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             setSelectedDiscount(null);
             setProofFile(null);
             setFormError('');
+            setSuccess(false);
         }
     }, [isOpen]);
 
@@ -274,12 +295,43 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         if (!isOpen) return;
         const fetchOptions = async () => {
             const { data: bData } = await supabase.from('barbers').select('*').eq('is_active', true);
-            if (bData) setBarbers(bData);
+            if (bData) {
+                setBarbers(bData);
+                if (!formData.barber && bData.length > 0) {
+                    setFormData(prev => ({ ...prev, barber: prev.barber || bData[0].name }));
+                }
+            }
 
-            const { data: sData } = await supabase.from('services').select('name, price');
-            if (sData) {
-                setServices(sData.map(s => s.name));
-                setServicesData(sData);
+            const [sRes, bRes] = await Promise.all([
+                supabase.from('services').select('*').order('sort_order', { ascending: true }),
+                supabase.from('bookings').select('service_type')
+            ]);
+
+            if (sRes.data) {
+                const popMap = {};
+                (bRes.data || []).forEach(b => {
+                    if (!b.service_type) return;
+                    const st = b.service_type.toLowerCase();
+                    sRes.data.forEach(s => {
+                        if (st.includes(s.name.toLowerCase())) {
+                            popMap[s.id] = (popMap[s.id] || 0) + 1;
+                        }
+                    });
+                });
+
+                const enriched = sRes.data.map(s => ({
+                    ...s,
+                    booking_count: popMap[s.id] || 0
+                }));
+
+                setServicesData(enriched);
+                setServices(enriched.map(s => s.name));
+
+                // Auto-select first popular service
+                if (!formData.service && enriched.length > 0) {
+                    const topPopular = [...enriched].sort((a, b) => (b.booking_count || 0) - (a.booking_count || 0))[0];
+                    setFormData(prev => ({ ...prev, service: prev.service || topPopular.name }));
+                }
             }
 
             const { data: dData } = await supabase.from('discounts')
@@ -298,10 +350,10 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         if (isOpen && initialData) {
             setFormData(prev => ({
                 ...prev,
-                service: initialData.service || '',
-                barber: initialData.barber || '',
-                date: initialData.date || '',
-                time: initialData.time || '',
+                service: initialData.service || prev.service,
+                barber: initialData.barber || prev.barber,
+                date: initialData.date || prev.date,
+                time: initialData.time || prev.time,
             }));
         }
     }, [initialData, isOpen]);
@@ -311,7 +363,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         if (isOpen) {
             window.history.pushState({ modal: 'booking' }, '');
 
-            const handlePopState = (e) => {
+            const handlePopState = () => {
                 onClose();
             };
 
@@ -323,22 +375,95 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                 }
             };
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen]);
+    }, [isOpen, onClose]);
+
+    // Sort services according to selected user preference
+    const sortedServices = useMemo(() => {
+        const list = [...servicesData];
+        if (serviceSort === 'popular') {
+            return list.sort((a, b) => {
+                const diff = (b.booking_count || 0) - (a.booking_count || 0);
+                if (diff !== 0) return diff;
+                return (a.sort_order ?? 999) - (b.sort_order ?? 999);
+            });
+        } else if (serviceSort === 'name') {
+            return list.sort((a, b) => a.name.localeCompare(b.name, 'id'));
+        } else { // 'default'
+            return list.sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999));
+        }
+    }, [servicesData, serviceSort]);
+
+    const chosenServiceObj = servicesData.find(s => s.name === formData.service);
+    const basePrice = chosenServiceObj ? chosenServiceObj.price : 0;
+    const subtotal = basePrice;
+
+    // Calculate discounts
+    let referralDiscVal = 0;
+    let referralCommVal = 0;
+    if (appliedReferral) {
+        if (appliedReferral.discount_type === 'percent') {
+            referralDiscVal = Math.floor((subtotal * appliedReferral.discount_value) / 100);
+        } else {
+            referralDiscVal = appliedReferral.discount_value;
+        }
+        if (appliedReferral.commission_type === 'percent') {
+            referralCommVal = Math.floor((subtotal * appliedReferral.commission_value) / 100);
+        } else {
+            referralCommVal = appliedReferral.commission_value;
+        }
+    }
+
+    let calculatedDiscount = 0;
+    if (appliedReferral) {
+        calculatedDiscount = referralDiscVal;
+    } else if (voucherData) {
+        calculatedDiscount = voucherData.discountValue;
+    } else if (selectedDiscount) {
+        calculatedDiscount = getDiscountDeduction(selectedDiscount, subtotal);
+    }
+
+    const grandTotal = Math.max(0, subtotal - calculatedDiscount);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
 
+        if (!formData.name.trim()) {
+            setFormError('Silakan isi nama lengkap.');
+            return;
+        }
+
         if (!validatePhone(formData.phone)) {
-            setFormError('Please enter a valid phone number starting with 08 or 628.');
+            setFormError('Nomor HP tidak valid. Gunakan format Indonesia yang dimulai dengan 08 atau 628.');
+            return;
+        }
+
+        if (!formData.service) {
+            setFormError('Silakan pilih layanan.');
+            return;
+        }
+
+        if (!formData.barber) {
+            setFormError('Silakan pilih kapster.');
+            return;
+        }
+
+        if (!formData.date) {
+            setFormError('Silakan pilih tanggal booking.');
+            return;
+        }
+
+        if (!formData.time) {
+            setFormError('Silakan pilih jam kedatangan.');
             return;
         }
 
         if (isSlotBooked(formData.time)) {
-            setFormError('This slot was just taken. Please choose another time.');
+            setFormError('Slot waktu ini baru saja dipesan pelanggan lain. Silakan pilih jam lain.');
             return;
         }
+
+        setLoading(true);
 
         try {
             let uploadedUrl = null;
@@ -346,7 +471,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
 
             if (selectedDiscount && selectedDiscount.requires_proof) {
                 if (!proofFile) {
-                    setFormError(`Silakan unggah bukti untuk diskon "${selectedDiscount.name}".`);
+                    setFormError(`Silakan unggah gambar bukti untuk diskon "${selectedDiscount.name}".`);
                     setLoading(false);
                     return;
                 }
@@ -385,50 +510,21 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
 
             if (existing && existing.length > 0) {
                 setBookedSlots(prev => [...prev, formData.time]);
-                setFormError('Sorry, this slot was just booked by someone else. Please choose another time.');
+                setFormError('Maaf, slot waktu ini baru saja diambil pelanggan lain. Silakan pilih jam lain.');
                 setLoading(false);
                 return;
             }
 
-            const chosenServiceObj = servicesData.find(s => s.name === formData.service);
-            let basePrice = chosenServiceObj ? chosenServiceObj.price : 0;
-            
-            let discountValue = 0;
-            let referralDiscVal = 0;
-            let referralCommVal = 0;
-
-            if (appliedReferral) {
-                if (appliedReferral.discount_type === 'percent') {
-                    referralDiscVal = Math.floor((basePrice * appliedReferral.discount_value) / 100);
-                } else {
-                    referralDiscVal = appliedReferral.discount_value;
-                }
-
-                if (appliedReferral.commission_type === 'percent') {
-                    referralCommVal = Math.floor((basePrice * appliedReferral.commission_value) / 100);
-                } else {
-                    referralCommVal = appliedReferral.commission_value;
-                }
-                discountValue = referralDiscVal;
-            } else if (voucherData) {
-                discountValue = voucherData.discountValue;
-            } else if (selectedDiscount) {
-                discountValue = getDiscountDeduction(selectedDiscount, basePrice);
-            }
-
-            let grandTotal = basePrice - discountValue;
-            if (grandTotal < 0) grandTotal = 0;
-
             const bookingPayload = {
-                customer_name: formData.name,
-                phone_number: formData.phone,
+                customer_name: formData.name.trim(),
+                phone_number: formData.phone.trim(),
                 service_type: formData.service,
                 barber_name: formData.barber,
                 booking_date: formData.date,
                 booking_time: formData.time,
                 status: 'pending',
                 total_price: grandTotal,
-                voucher_discount: discountValue,
+                voucher_discount: calculatedDiscount,
                 voucher_program: appliedReferral ? `REF:${appliedReferral.code}` : (voucherData ? voucherData.programId : (selectedDiscount ? selectedDiscount.name : null)),
                 proof_url: uploadedUrl,
                 discount_status: discountStatus,
@@ -445,7 +541,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             if (error) throw error;
 
             if (!newBooking || newBooking.length === 0) {
-                setFormError('Booking gagal. Lo terdeteksi punya lebih dari 2 booking aktif dalam 7 hari terakhir yang gak selesai. Nomor lo otomatis di-blacklist.');
+                setFormError('Booking gagal. Anda terdeteksi memiliki lebih dari 2 booking aktif dalam 7 hari terakhir yang tidak selesai.');
                 setLoading(false);
                 return;
             }
@@ -456,14 +552,13 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                         partner_id: appliedReferral.id,
                         code: appliedReferral.code,
                         booking_id: newBooking[0].id,
-                        customer_name: formData.name,
-                        customer_phone: formData.phone,
-                        order_amount: basePrice,
+                        customer_name: formData.name.trim(),
+                        customer_phone: formData.phone.trim(),
+                        order_amount: subtotal,
                         discount_amount: referralDiscVal,
                         commission_amount: referralCommVal,
                         status: 'pending'
                     }]);
-
                     await supabase.from('referral_partners')
                         .update({ current_uses: (appliedReferral.current_uses || 0) + 1 })
                         .eq('code', appliedReferral.code);
@@ -478,458 +573,616 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                     .eq('id', voucherData.claimId);
             }
 
+            localStorage.setItem('auro_name', formData.name.trim());
+            localStorage.setItem('auro_phone', formData.phone.trim());
+
             setSuccess(newBooking[0].id);
         } catch (error) {
             console.error('Error booking:', error.message);
-            setFormError(error.message || 'Failed to book. Please check your connection or try again.');
+            setFormError(error.message || 'Terjadi kesalahan saat memproses booking. Silakan coba lagi.');
         } finally {
             setLoading(false);
         }
     };
 
-    const chosenServiceObj = servicesData.find(s => s.name === formData.service);
+    const todayStr = new Date().toISOString().split('T')[0];
+    const tomorrowObj = new Date();
+    tomorrowObj.setDate(tomorrowObj.getDate() + 1);
+    const tomorrowStr = tomorrowObj.toISOString().split('T')[0];
 
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto overscroll-contain">
+                    {/* Backdrop */}
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={onClose}
-                        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/85 backdrop-blur-md"
                     />
 
+                    {/* Modal Window Container (Bottom Sheet on Mobile iPhone, Centered Dialog on Desktop) */}
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                        initial={{ scale: 0.96, opacity: 0, y: 30 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                        className="relative w-full max-w-lg glass-card p-6 md:p-8 shadow-2xl overflow-y-auto max-h-[90vh]"
+                        exit={{ scale: 0.96, opacity: 0, y: 30 }}
+                        transition={{ duration: 0.25 }}
+                        className="relative w-full max-w-2xl bg-[#111111] border border-[#d4af37]/30 rounded-t-[28px] sm:rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.9)] overflow-hidden my-0 sm:my-auto max-h-[92dvh] flex flex-col z-10 pb-[env(safe-area-inset-bottom,16px)]"
                     >
-                        {success ? (
-                            <div className="py-12 text-center">
-                                <motion.div
-                                    initial={{ scale: 0 }}
-                                    animate={{ scale: 1 }}
-                                    className="inline-block text-[#d4af37] mb-6"
-                                >
-                                    <CheckCircle size={80} />
-                                </motion.div>
-                                <h3 className="serif text-3xl font-bold mb-2">Booking Aman! 🔥</h3>
-                                <p className="text-[#a1a1a1] mb-6">Slot lo udah dikunci. Siap-siap glow up!</p>
+                        {/* Top Gold Foil Stripe */}
+                        <div className="h-1.5 w-full bg-gradient-to-r from-[#997922] via-[#f1d592] to-[#997922] shrink-0" />
 
-                                <div className="bg-[#141414] p-4 rounded-lg border border-[#d4af37]/20 mb-6">
-                                    <p className="text-xs uppercase tracking-widest text-[#d4af37] mb-2">Pantau Antrean Live</p>
-                                    <p className="text-sm font-mono break-all text-white/80">
-                                        {window.location.origin}/queue/{success}
-                                    </p>
+                        {/* Modal Header */}
+                        <div className="px-6 py-4 border-b border-[#222] bg-[#141414] flex items-center justify-between shrink-0">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-[#d4af37] animate-pulse" />
+                                    <span className="text-[10px] uppercase tracking-[0.2em] font-extrabold text-[#d4af37]">
+                                        Auro Barbershop
+                                    </span>
                                 </div>
-
-                                <div className="flex flex-col gap-3">
-                                    <button
-                                        onClick={() => window.open(`/queue/${success}`, '_blank')}
-                                        className="gold-button w-full"
-                                    >
-                                        Open Monitor
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setSuccess(false);
-                                            onClose();
-                                            setFormData({ name: '', phone: '', service: '', barber: '', date: '', time: '' });
-                                            setVoucherData(null);
-                                            setSelectedDiscount(null);
-                                            setProofFile(null);
-                                        }}
-                                        className="py-3 px-6 bg-transparent border border-[#333] hover:border-[#d4af37]/50 transition-colors text-sm uppercase tracking-widest rounded text-white"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
+                                <h3 className="serif text-xl sm:text-2xl font-bold text-white mt-0.5">
+                                    Reservasi Jadwal Cukur
+                                </h3>
                             </div>
-                        ) : (
-                            <>
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="serif text-2xl font-bold">Secure Your Slot</h3>
-                                    <button onClick={onClose} className="text-[#a1a1a1] hover:text-[#d4af37]">
-                                        <X size={24} />
-                                    </button>
+                            <button 
+                                onClick={onClose} 
+                                className="p-2 rounded-xl bg-[#1f1f1f] text-gray-400 hover:text-white hover:bg-[#2a2a2a] transition-all"
+                                aria-label="Tutup"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+                            {success ? (
+                                <div className="py-8 text-center flex flex-col items-center justify-center">
+                                    <div className="w-20 h-20 rounded-full bg-[#d4af37]/15 border border-[#d4af37]/40 flex items-center justify-center text-[#d4af37] mb-5 shadow-[0_0_30px_rgba(212,175,55,0.2)]">
+                                        <CheckCircle size={44} />
+                                    </div>
+                                    <h3 className="serif text-3xl font-bold text-white mb-2">Booking Berhasil! 🔥</h3>
+                                    <p className="text-gray-400 text-xs max-w-sm mb-6">
+                                        Slot jadwal Anda di Auro Barbershop telah diamankan secara resmi.
+                                    </p>
+
+                                    <div className="bg-[#181818] p-4 rounded-2xl border border-[#d4af37]/20 w-full max-w-md mb-6 text-left">
+                                        <div className="flex justify-between items-center text-xs pb-2 border-b border-[#2a2a2a]">
+                                            <span className="text-gray-400 uppercase tracking-wider text-[10px] font-bold">Kode Tiket Anda</span>
+                                            <span className="font-mono text-[#d4af37] font-bold">#{success.substring(0, 8).toUpperCase()}</span>
+                                        </div>
+                                        <p className="text-xs text-gray-300 mt-2">
+                                            Layanan: <strong>{formData.service}</strong> ({formData.barber})
+                                        </p>
+                                        <p className="text-xs text-gray-300">
+                                            Jadwal: <strong>{formData.date} • {formData.time} WIB</strong>
+                                        </p>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                                        <button
+                                            onClick={() => window.open(`/queue/${success}`, '_blank')}
+                                            className="gold-button flex-1 !py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2"
+                                        >
+                                            <span>Buka Monitor Antrean</span>
+                                            <ExternalLink size={14} />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setSuccess(false);
+                                                onClose();
+                                            }}
+                                            className="py-3 px-5 rounded-xl border border-[#333] hover:border-gray-500 text-xs font-bold uppercase tracking-wider text-gray-300 hover:text-white transition-colors"
+                                        >
+                                            Selesai
+                                        </button>
+                                    </div>
                                 </div>
-
-                                {formError && <p className="text-red-500 text-xs text-center border border-red-500/30 p-2 rounded bg-red-500/10 mb-4">{formError}</p>}
-
+                            ) : (
                                 <form onSubmit={handleSubmit} className="space-y-6">
-                                    <div className="space-y-4">
-                                        <div className="relative">
-                                            <User size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
-                                            <input
-                                                required
-                                                type="text"
-                                                placeholder="Nama Lengkap Lo"
-                                                className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            />
+                                    {formError && (
+                                        <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl flex items-start gap-2.5 text-red-400 text-xs">
+                                            <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                            <span>{formError}</span>
                                         </div>
+                                    )}
 
-                                        <div className="relative">
-                                            <Phone size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
-                                            <input
-                                                required
-                                                type="tel"
-                                                placeholder="Nomor HP Lo"
-                                                className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors"
-                                                value={formData.phone}
-                                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
+                                    {/* 1. DATA DIRI (Nama & HP) */}
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] uppercase font-bold tracking-wider text-[#d4af37] flex items-center gap-1.5">
+                                            <User size={14} /> 1. Data Diri Pelanggan
+                                        </label>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="relative">
-                                                <Calendar size={18} className="absolute left-3 top-3.5 text-[#d4af37]/50" />
+                                                <User size={16} className="absolute left-3.5 top-3.5 text-[#d4af37]" />
                                                 <input
                                                     required
-                                                    type="date"
-                                                    className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 pl-10 focus:outline-none focus:border-[#d4af37] transition-colors text-sm text-white"
-                                                    style={{ colorScheme: 'dark' }}
-                                                    value={formData.date}
-                                                    onChange={(e) => {
-                                                        const d = new Date(e.target.value + 'T00:00:00');
-                                                        const dayOfWeek = d.getDay();
-                                                        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
-                                                        if (daySchedule && daySchedule.isHoliday) {
-                                                            alert(`Mohon maaf, kami tutup pada hari ${daySchedule.dayName}.`);
-                                                            return;
-                                                        }
-                                                        setFormData({ ...formData, date: e.target.value });
-                                                    }}
+                                                    type="text"
+                                                    placeholder="Nama Lengkap (Cth: Budi)"
+                                                    className="w-full bg-[#161616] border border-[#2a2a2a] rounded-xl p-3 pl-10 focus:outline-none focus:border-[#d4af37] text-xs text-white placeholder:text-gray-600"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                                 />
                                             </div>
                                             <div className="relative">
-                                                <CircularTimePicker
-                                                    value={formData.time}
-                                                    onChange={(time) => setFormData({ ...formData, time })}
-                                                    bookedSlots={bookedSlots}
-                                                    interval={5}
-                                                    startTime={pickerStartTime}
-                                                    endTime={pickerEndTime}
+                                                <Phone size={16} className="absolute left-3.5 top-3.5 text-[#d4af37]" />
+                                                <input
+                                                    required
+                                                    type="tel"
+                                                    placeholder="Nomor HP / WhatsApp (08...)"
+                                                    className="w-full bg-[#161616] border border-[#2a2a2a] rounded-xl p-3 pl-10 focus:outline-none focus:border-[#d4af37] text-xs text-white font-mono placeholder:text-gray-600"
+                                                    value={formData.phone}
+                                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                                 />
                                             </div>
                                         </div>
-
-                                        {formData.date === new Date().toISOString().split('T')[0] && (
-                                            <div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (!formData.barber) {
-                                                            setFormError('Pilih Capster dulu ya buat cek ketersediaan walk-in.');
-                                                            return;
-                                                        }
-                                                        if (isNowAvailable()) {
-                                                            setFormData({ ...formData, time: getNowTimeStr() });
-                                                        }
-                                                    }}
-                                                    disabled={formData.barber && !isNowAvailable()}
-                                                    className={`
-                                                        py-2.5 w-full text-sm font-mono font-bold rounded transition-colors border flex items-center justify-center gap-2
-                                                        ${formData.barber && !isNowAvailable() ? 'bg-[#1a1a1a] border-[#1f1f1f] text-[#333] cursor-not-allowed' :
-                                                            'bg-[#141414] border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10'}
-                                                    `}
-                                                >
-                                                    <Clock size={16} />
-                                                    {!formData.barber ? `Cek Walk-in Kunjungan untuk ${getNowTimeStr()}...` : (!isNowAvailable() ? 'Tidak Tersedia (Penuh)' : `Booking Walk-in (${getNowTimeStr()})`)}
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        <select
-                                            required
-                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
-                                            value={formData.service}
-                                            onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                                        >
-                                            <option value="" disabled>Pilih Services</option>
-                                            {services.map(s => (
-                                                <option key={s} value={s}>{s}</option>
-                                            ))}
-                                        </select>
-
-                                        <select
-                                            required
-                                            className="w-full bg-[#141414] border border-[#d4af37]/20 rounded p-3 focus:outline-none focus:border-[#d4af37] transition-colors appearance-none"
-                                            value={formData.barber}
-                                            onChange={(e) => setFormData({ ...formData, barber: e.target.value })}
-                                        >
-                                            <option value="" disabled>Pilih Capster</option>
-                                            {barbers.map(b => (
-                                                <option key={b.id || b.name} value={b.name}>{b.name}</option>
-                                            ))}
-                                        </select>
                                     </div>
 
-                                    {/* Summary Box */}
-                                    {chosenServiceObj && (
-                                        <div className="p-4 bg-[#141414]/80 backdrop-blur rounded border border-[#d4af37]/15 text-sm space-y-2">
-                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Tanggal</span> <span className="text-white">{formData.date}</span></p>
-                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Waktu</span> <span className="text-[#d4af37] font-mono">{formData.time || '-'}</span></p>
-                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Kapster</span> <span className="text-white">{formData.barber || '-'}</span></p>
-                                            <p className="flex justify-between"><span className="text-[#a1a1a1]">Layanan</span> <span className="text-white">{formData.service} ({formatCurrency(chosenServiceObj.price)})</span></p>
-                                            <hr className="border-[#333] my-2" />
-                                            <p className="flex justify-between text-xs"><span className="text-[#a1a1a1]">Subtotal</span> <span className="text-white">{formatCurrency(chosenServiceObj.price)}</span></p>
-                                            
-                                            {appliedReferral && (
-                                                <p className="flex justify-between text-xs text-green-400 font-semibold">
-                                                    <span>Referral ({appliedReferral.code})</span>
-                                                    <span>-{formatCurrency(
-                                                        appliedReferral.discount_type === 'percent'
-                                                            ? Math.floor((chosenServiceObj.price * appliedReferral.discount_value) / 100)
-                                                            : appliedReferral.discount_value
-                                                    )}</span>
-                                                </p>
-                                            )}
+                                    {/* 2. PILIH LAYANAN (Interactive & Scrollable) */}
+                                    <div className="space-y-2">
+                                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                                            <label className="text-[11px] uppercase font-bold tracking-wider text-[#d4af37] flex items-center gap-1.5">
+                                                <Scissors size={14} /> 2. Pilih Menu Layanan
+                                            </label>
 
-                                            {voucherData && !appliedReferral && (
-                                                <p className="flex justify-between text-xs text-green-500">
-                                                    <span>Diskon ({voucherData.programId})</span>
-                                                    <span>-{formatCurrency(voucherData.discountValue)}</span>
-                                                </p>
-                                            )}
-                                            <p className="flex justify-between font-bold text-base border-t border-[#d4af37]/20 pt-2 text-[#d4af37]">
-                                                <span>Total</span>
-                                                <span>{formatCurrency(Math.max(0, chosenServiceObj.price - (
-                                                    appliedReferral ? (
-                                                        appliedReferral.discount_type === 'percent'
-                                                            ? Math.floor((chosenServiceObj.price * appliedReferral.discount_value) / 100)
-                                                            : appliedReferral.discount_value
-                                                    ) : (voucherData?.discountValue || 0)
-                                                )))}</span>
-                                            </p>
-                                        </div>
-                                    )}
-
-                                    {/* Referral Code UI Section */}
-                                    <div className="bg-[#141414] border border-[#d4af37]/20 rounded p-4 text-left space-y-3">
-                                        <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block">
-                                            🤝 Punya Kode Referral / Affiliate?
-                                        </span>
-
-                                        {appliedReferral ? (
-                                            <div className="bg-green-500/10 border border-green-500/30 rounded p-3 flex justify-between items-center text-xs">
-                                                <div>
-                                                    <div className="font-bold text-green-400 text-sm flex items-center gap-1.5">
-                                                        <span>✓ {appliedReferral.code}</span>
-                                                        <span className="text-[10px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded font-normal">
-                                                            {appliedReferral.partner_name}
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-[11px] text-[#a1a1a1] mt-0.5">
-                                                        Potongan {appliedReferral.discount_type === 'percent' ? `${appliedReferral.discount_value}%` : formatCurrency(appliedReferral.discount_value)} terpasang!
-                                                    </div>
-                                                </div>
+                                            {/* Sort Options */}
+                                            <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded-lg border border-[#2a2a2a]">
                                                 <button
                                                     type="button"
-                                                    onClick={removeReferral}
-                                                    className="text-xs text-red-400 hover:text-red-300 font-bold px-2 py-1 bg-red-500/10 hover:bg-red-500/20 rounded border border-red-500/20 transition-all"
+                                                    onClick={() => setServiceSort('popular')}
+                                                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
+                                                        serviceSort === 'popular' ? 'bg-[#d4af37] text-black' : 'text-gray-400 hover:text-gray-200'
+                                                    }`}
                                                 >
-                                                    Hapus
+                                                    🔥 Populer
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setServiceSort('name')}
+                                                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
+                                                        serviceSort === 'name' ? 'bg-[#d4af37] text-black' : 'text-gray-400 hover:text-gray-200'
+                                                    }`}
+                                                >
+                                                    🔤 Nama
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setServiceSort('default')}
+                                                    className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all flex items-center gap-1 ${
+                                                        serviceSort === 'default' ? 'bg-[#d4af37] text-black' : 'text-gray-400 hover:text-gray-200'
+                                                    }`}
+                                                >
+                                                    ⚙️ Default
                                                 </button>
                                             </div>
-                                        ) : (
+                                        </div>
+
+                                        <div className="max-h-[200px] overflow-y-auto pr-1 space-y-2 rounded-xl border border-[#262626] bg-[#0c0c0c] p-1.5 custom-scrollbar">
+                                            {sortedServices.map((s, idx) => {
+                                                const isSelected = formData.service === s.name;
+                                                const isTopPopular = serviceSort === 'popular' && idx < 3 && (s.booking_count || 0) > 0;
+
+                                                return (
+                                                    <button
+                                                        key={s.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData({ ...formData, service: s.name });
+                                                            if (formError) setFormError('');
+                                                        }}
+                                                        className={`
+                                                            w-full p-2.5 rounded-lg border text-left flex items-center justify-between transition-all duration-200
+                                                            ${isSelected 
+                                                                ? 'bg-[#d4af37]/15 border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.15)] ring-1 ring-[#d4af37]' 
+                                                                : 'bg-[#141414] border-[#222] hover:border-[#d4af37]/40 text-gray-300'
+                                                            }
+                                                        `}
+                                                    >
+                                                        <div className="flex items-center gap-2.5">
+                                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${isSelected ? 'bg-[#d4af37] text-black' : 'bg-[#1e1e1e] text-[#d4af37]'}`}>
+                                                                {isTopPopular ? '🔥' : '✂️'}
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className={`font-bold text-xs ${isSelected ? 'text-white' : 'text-gray-200'}`}>
+                                                                        {s.name}
+                                                                    </span>
+                                                                    {isTopPopular && (
+                                                                        <span className="text-[8px] bg-[#d4af37]/20 text-[#d4af37] px-1 py-0.2 rounded font-bold uppercase">
+                                                                            Top {idx + 1}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <span className="font-mono font-bold text-xs text-[#d4af37]">
+                                                                {formatCurrency(s.price)}
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 3. PILIH KAPSTER */}
+                                    <div className="space-y-2">
+                                        <label className="text-[11px] uppercase font-bold tracking-wider text-[#d4af37] flex items-center gap-1.5">
+                                            <User size={14} /> 3. Pilih Kapster
+                                        </label>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                                            {barbers.map(b => {
+                                                const isSelected = formData.barber === b.name;
+                                                const initials = b.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                                                return (
+                                                    <button
+                                                        key={b.id || b.name}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setFormData({ ...formData, barber: b.name, time: '' });
+                                                            if (formError) setFormError('');
+                                                        }}
+                                                        className={`
+                                                            p-2.5 rounded-xl border flex items-center gap-2.5 transition-all
+                                                            ${isSelected 
+                                                                ? 'bg-[#d4af37]/15 border-[#d4af37] ring-1 ring-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.15)]' 
+                                                                : 'bg-[#161616] border-[#2a2a2a] hover:border-[#d4af37]/40 text-gray-300'
+                                                            }
+                                                        `}
+                                                    >
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0 ${isSelected ? 'bg-[#d4af37] text-black' : 'bg-[#222] text-[#d4af37] border border-[#d4af37]/30'}`}>
+                                                            {initials}
+                                                        </div>
+                                                        <div className="text-left truncate">
+                                                            <p className="text-xs font-bold text-white truncate">{b.name}</p>
+                                                            <p className="text-[9px] text-emerald-400 font-semibold uppercase">Ready</p>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* 4. TANGGAL & WAKTU */}
+                                    <div className="space-y-2.5">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[11px] uppercase font-bold tracking-wider text-[#d4af37] flex items-center gap-1.5">
+                                                <Calendar size={14} /> 4. Jadwal & Jam Kedatangan
+                                            </label>
+                                            <button
+                                                type="button"
+                                                onClick={() => setPickerMode(prev => prev === 'grid' ? 'dial' : 'grid')}
+                                                className="text-[10px] uppercase tracking-wider text-gray-400 hover:text-[#d4af37] underline"
+                                            >
+                                                {pickerMode === 'grid' ? 'Mode Dial Jam' : 'Mode Grid Slot'}
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="space-y-2">
-                                                {voucherData?.claimId || selectedDiscount ? (
-                                                    <p className="text-[11px] text-[#a1a1a1] bg-[#0d0d0d] p-2.5 rounded border border-[#333]">
-                                                        ⚠️ Diskon/Voucher lain sedang digunakan. Menggunakan kode referral akan menggantikan diskon aktif saat ini.
-                                                    </p>
-                                                ) : null}
                                                 <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Masukkan Kode (Contoh: BEMUNILA)"
-                                                        value={referralInput}
-                                                        onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
-                                                        className="flex-1 bg-[#0d0d0d] border border-[#d4af37]/20 rounded px-3 py-2 text-xs font-mono text-white placeholder-[#555] focus:outline-none focus:border-[#d4af37]"
-                                                    />
                                                     <button
                                                         type="button"
-                                                        onClick={() => verifyReferralCode()}
-                                                        disabled={referralLoading || !referralInput.trim()}
-                                                        className="bg-[#d4af37] text-black font-bold text-xs px-4 py-2 rounded hover:bg-[#b59226] transition-colors disabled:opacity-40"
+                                                        onClick={() => setFormData({ ...formData, date: todayStr, time: '' })}
+                                                        className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors ${formData.date === todayStr ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#161616] text-gray-300 border-[#2a2a2a] hover:border-[#d4af37]/50'}`}
                                                     >
-                                                        {referralLoading ? 'Cek...' : 'Terapkan'}
+                                                        Hari Ini
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setFormData({ ...formData, date: tomorrowStr, time: '' })}
+                                                        className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors ${formData.date === tomorrowStr ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#161616] text-gray-300 border-[#2a2a2a] hover:border-[#d4af37]/50'}`}
+                                                    >
+                                                        Besok
                                                     </button>
                                                 </div>
-                                                {referralError && (
-                                                    <p className="text-red-400 text-xs mt-1">{referralError}</p>
+                                                <div className="relative">
+                                                    <Calendar size={15} className="absolute left-3 top-3 text-[#d4af37]" />
+                                                    <input
+                                                        required
+                                                        type="date"
+                                                        min={todayStr}
+                                                        value={formData.date}
+                                                        onChange={(e) => {
+                                                            const d = new Date(e.target.value + 'T00:00:00');
+                                                            const dayOfWeek = d.getDay();
+                                                            const daySchedule = settings?.daily_hours?.find(ds => ds.dayOfWeek === dayOfWeek);
+                                                            if (daySchedule && daySchedule.isHoliday) {
+                                                                alert(`Mohon maaf, Auro Barbershop libur pada hari ${daySchedule.dayName}.`);
+                                                                return;
+                                                            }
+                                                            setFormData({ ...formData, date: e.target.value, time: '' });
+                                                        }}
+                                                        className="w-full bg-[#161616] border border-[#2a2a2a] rounded-xl p-2.5 pl-9 focus:outline-none focus:border-[#d4af37] text-xs text-white"
+                                                        style={{ colorScheme: 'dark' }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Time slots container */}
+                                            <div>
+                                                {pickerMode === 'grid' ? (
+                                                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
+                                                        {availableTimeSlots.map(slot => {
+                                                            const isBooked = isSlotBooked(slot);
+                                                            const isSelected = formData.time === slot;
+                                                            const isPast = formData.date === todayStr && slot < getNowTimeStr();
+
+                                                            return (
+                                                                <button
+                                                                    key={slot}
+                                                                    type="button"
+                                                                    disabled={isBooked || isPast}
+                                                                    onClick={() => {
+                                                                        setFormData({ ...formData, time: slot });
+                                                                        if (formError) setFormError('');
+                                                                    }}
+                                                                    className={`
+                                                                        py-2 rounded-lg font-mono text-[11px] font-bold transition-all border
+                                                                        ${isSelected 
+                                                                            ? 'bg-[#d4af37] text-black border-[#d4af37] shadow-sm' 
+                                                                            : isBooked || isPast
+                                                                                ? 'bg-[#141414] border-[#1f1f1f] text-[#444] cursor-not-allowed line-through'
+                                                                                : 'bg-[#161616] border-[#2a2a2a] text-gray-300 hover:border-[#d4af37]/60 hover:bg-[#202020]'
+                                                                        }
+                                                                    `}
+                                                                >
+                                                                    {slot}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                ) : (
+                                                    <CircularTimePicker
+                                                        value={formData.time}
+                                                        onChange={(time) => setFormData({ ...formData, time })}
+                                                        bookedSlots={bookedSlots}
+                                                        interval={5}
+                                                        startTime={pickerStartTime}
+                                                        endTime={pickerEndTime}
+                                                    />
                                                 )}
                                             </div>
+                                        </div>
+
+                                        {/* Walk-in Shortcut for Today */}
+                                        {formData.date === todayStr && (
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (!formData.barber) {
+                                                        setFormError('Pilih Kapster terlebih dahulu untuk cek ketersediaan Walk-In.');
+                                                        return;
+                                                    }
+                                                    if (isNowAvailable()) {
+                                                        setFormData({ ...formData, time: getNowTimeStr() });
+                                                    }
+                                                }}
+                                                disabled={formData.barber && !isNowAvailable()}
+                                                className={`
+                                                    w-full py-2 px-3 rounded-xl text-xs font-mono font-bold border flex items-center justify-center gap-1.5 transition-all
+                                                    ${formData.barber && !isNowAvailable() 
+                                                        ? 'bg-[#181818] border-[#222] text-[#444] cursor-not-allowed' 
+                                                        : 'bg-[#d4af37]/10 border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/20'}
+                                                `}
+                                            >
+                                                <Sparkles size={13} />
+                                                {!formData.barber 
+                                                    ? `Cek Kursi Walk-in Sekarang (${getNowTimeStr()} WIB)...` 
+                                                    : (!isNowAvailable() ? 'Kursi Sedang Penuh Saat Ini' : `⚡ Datang Langsung Sekarang (${getNowTimeStr()} WIB)`)}
+                                            </button>
                                         )}
                                     </div>
 
-                                    {/* Public Discounts Selection */}
-                                    {publicDiscounts.length > 0 && (chosenServiceObj?.price || 0) > 0 && (
-                                        appliedReferral ? (
-                                            <div className="bg-[#141414]/90 border border-green-500/20 rounded p-3 text-center text-xs text-[#a1a1a1]">
-                                                Kode referral sedang digunakan. Hapus referral untuk memilih diskon publik.
-                                            </div>
-                                        ) : voucherData?.claimId ? (
-                                            <div className="bg-[#141414]/90 border border-green-500/20 rounded p-4 text-center text-xs text-[#a1a1a1]">
-                                                Voucher program sedang digunakan. Hapus voucher untuk memilih diskon publik.
-                                            </div>
-                                        ) : (
-                                            <div className="bg-[#141414] border border-[#d4af37]/20 rounded p-4 text-left">
-                                                <span className="text-[#d4af37] font-bold text-xs uppercase tracking-widest block mb-3">
-                                                    Diskon Tersedia
-                                                </span>
-                                                <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
-                                                    {publicDiscounts.map((discount) => {
-                                                        const isSelected = selectedDiscount?.id === discount.id;
-                                                        const subtotal = chosenServiceObj.price;
-                                                        const minPurchase = discount.min_purchase || 0;
-                                                        const deduction = getDiscountDeduction(discount, subtotal);
-                                                        const isDisabled = subtotal < minPurchase;
+                                    {/* 5. PROMO & VOUCHER ACCORDION */}
+                                    <div className="space-y-2 pt-1">
+                                        <div className="text-[11px] uppercase font-bold tracking-wider text-gray-400 flex items-center justify-between">
+                                            <span className="flex items-center gap-1.5"><Gift size={14} className="text-[#d4af37]" /> Promo & Voucher</span>
+                                            {(appliedReferral || voucherData || selectedDiscount) && (
+                                                <span className="text-[10px] text-green-400 font-bold uppercase">1 Promo Aktif</span>
+                                            )}
+                                        </div>
 
-                                                        return (
-                                                            <button
-                                                                key={discount.id}
-                                                                type="button"
-                                                                disabled={isDisabled}
-                                                                onClick={() => {
-                                                                    if (isSelected) {
-                                                                        setSelectedDiscount(null);
-                                                                        setVoucherData(null);
-                                                                        setProofFile(null);
-                                                                    } else {
-                                                                        setAppliedReferral(null);
-                                                                        setSelectedDiscount(discount);
-                                                                        setVoucherData({
-                                                                            discountValue: deduction,
-                                                                            programId: discount.name,
-                                                                            claimId: null
-                                                                        });
-                                                                        setVoucherClaimKey(prev => prev + 1);
-                                                                        setProofFile(null);
-                                                                    }
-                                                                }}
-                                                                className={`w-full p-3 rounded border text-left transition-all flex justify-between items-center ${
-                                                                    isDisabled ? 'opacity-40 cursor-not-allowed border-[#333]' :
-                                                                    isSelected ? 'bg-[#d4af37]/10 border-[#d4af37] text-white' :
-                                                                    'bg-[#0d0d0d] border-[#d4af37]/20 hover:border-[#d4af37]/50'
-                                                                }`}
-                                                            >
-                                                                <div>
-                                                                    <div className="font-bold text-xs uppercase tracking-wider text-white">
-                                                                        {discount.name}
-                                                                        {discount.requires_proof && (
-                                                                            <span className="ml-2 bg-[#d4af37]/20 text-[#d4af37] text-[9px] px-1.5 py-0.5 rounded font-normal uppercase tracking-normal">
-                                                                                Upload Bukti
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="text-[10px] text-[#a1a1a1] mt-0.5">
-                                                                        {discount.type === 'percent' ? `${discount.value}%` : `Rp ${discount.value.toLocaleString('id-ID')}`}
-                                                                        {minPurchase > 0 && ` · Min. Belanja Rp ${minPurchase.toLocaleString('id-ID')}`}
-                                                                    </div>
-                                                                </div>
-                                                                {!isDisabled && (
-                                                                    <div className="text-right">
-                                                                        <span className="text-xs font-mono font-bold text-[#d4af37]">
-                                                                            -Rp {deduction.toLocaleString('id-ID')}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
+                                        {/* Accordion 1: Promo Spesial Barbershop (FIRST & EXPANDED) */}
+                                        {publicDiscounts.length > 0 && (
+                                            <div className="border border-[#222] rounded-xl overflow-hidden bg-[#141414]">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setActivePromoTab(prev => prev === 'discount' ? 'none' : 'discount')}
+                                                    className="w-full p-2.5 text-left flex items-center justify-between text-xs font-bold text-gray-300 hover:text-white transition-colors"
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <Tag size={13} className="text-[#d4af37]" /> Promo Spesial Barbershop
+                                                    </span>
+                                                    {selectedDiscount ? (
+                                                        <span className="text-xs text-cyan-400 font-mono flex items-center gap-1 font-bold">
+                                                            <Check size={12} /> {selectedDiscount.name}
+                                                        </span>
+                                                    ) : (
+                                                        activePromoTab === 'discount' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                                                    )}
+                                                </button>
+                                                {activePromoTab === 'discount' && (
+                                                    <div className="p-3 pt-0 border-t border-[#222]/50 space-y-2">
+                                                        {publicDiscounts.map(disc => {
+                                                            const isSel = selectedDiscount?.id === disc.id;
+                                                            return (
+                                                                <button
+                                                                    key={disc.id}
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (isSel) {
+                                                                            setSelectedDiscount(null);
+                                                                            setProofFile(null);
+                                                                        } else {
+                                                                            setSelectedDiscount(disc);
+                                                                            setVoucherData(null);
+                                                                            setAppliedReferral(null);
+                                                                        }
+                                                                    }}
+                                                                    className={`w-full p-2 rounded-lg border text-left flex items-center justify-between text-xs transition-colors ${isSel ? 'bg-cyan-500/10 border-cyan-500 text-white' : 'bg-[#181818] border-[#2a2a2a] text-gray-300 hover:border-gray-500'}`}
+                                                                >
+                                                                    <span>{disc.name}</span>
+                                                                    <span className="font-mono font-bold text-[#d4af37]">
+                                                                        {disc.type === 'percent' ? `${disc.value}% OFF` : formatCurrency(disc.value)}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })}
 
-                                                {/* Proof Upload UI */}
-                                                {selectedDiscount?.requires_proof && (
-                                                    <div className="mt-4 pt-4 border-t border-[#333] space-y-2">
-                                                        <label className="block text-xs uppercase tracking-widest text-[#d4af37] font-bold">
-                                                            Unggah Bukti Pendukung *
-                                                        </label>
-                                                        <p className="text-[10px] text-[#a1a1a1]">
-                                                            Unggah gambar/screenshot bukti kelayakan diskon.
-                                                        </p>
-                                                        <div className="flex items-center gap-3">
-                                                            {proofFile && (
-                                                                <div className="w-12 h-12 rounded overflow-hidden border border-[#d4af37]/30 shrink-0 bg-[#0d0d0d]">
-                                                                    <img 
-                                                                        src={URL.createObjectURL(proofFile)} 
-                                                                        alt="Preview bukti" 
-                                                                        className="w-full h-full object-cover"
-                                                                    />
-                                                                </div>
-                                                            )}
-                                                            <input
-                                                                required
-                                                                type="file"
-                                                                accept="image/*"
-                                                                onChange={(e) => {
-                                                                    if (e.target.files && e.target.files[0]) {
-                                                                        setProofFile(e.target.files[0]);
-                                                                    }
-                                                                }}
-                                                                className="w-full text-xs text-[#a1a1a1] file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-[10px] file:font-bold file:uppercase file:tracking-wider file:bg-[#d4af37] file:text-black hover:file:bg-[#b5952f] transition-colors cursor-pointer"
-                                                            />
-                                                        </div>
+                                                        {selectedDiscount && selectedDiscount.requires_proof && (
+                                                            <div className="mt-2 p-2.5 bg-[#181818] rounded-lg border border-[#333]">
+                                                                <label className="text-[10px] text-gray-300 block mb-1 font-bold">Unggah Bukti Syarat Promo:</label>
+                                                                <input
+                                                                    type="file"
+                                                                    accept="image/*"
+                                                                    onChange={(e) => setProofFile(e.target.files[0])}
+                                                                    className="text-xs text-gray-400 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:bg-[#d4af37] file:text-black cursor-pointer"
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
-                                        )
-                                    )}
-
-                                    <div className="mt-4 mb-2">
-                                        {selectedDiscount ? (
-                                            <div className="bg-[#141414]/90 border border-[#d4af37]/20 rounded p-4 text-center text-xs text-[#a1a1a1] flex items-center justify-between">
-                                                <span>Diskon publik aktif: <strong>{selectedDiscount.name}</strong></span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setSelectedDiscount(null);
-                                                        setVoucherData(null);
-                                                        setProofFile(null);
-                                                    }}
-                                                    className="text-xs text-[#d4af37] hover:text-[#f1d592] font-bold uppercase tracking-wider pl-2"
-                                                >
-                                                    Batalkan
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <VoucherClaim 
-                                                key={`vc-${voucherClaimKey}`}
-                                                onVoucherApplied={(data) => {
-                                                    setVoucherData(data);
-                                                    if (data) {
-                                                        setSelectedDiscount(null);
-                                                        setProofFile(null);
-                                                    }
-                                                }} 
-                                                initialPhone={formData.phone} 
-                                            />
                                         )}
+
+                                        {/* Accordion 2: Referral Code */}
+                                        <div className="border border-[#222] rounded-xl overflow-hidden bg-[#141414]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setActivePromoTab(prev => prev === 'referral' ? 'none' : 'referral')}
+                                                className="w-full p-2.5 text-left flex items-center justify-between text-xs font-bold text-gray-300 hover:text-white transition-colors"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <Percent size={13} className="text-[#d4af37]" /> Masukkan Kode Referral
+                                                </span>
+                                                {appliedReferral ? (
+                                                    <span className="text-xs text-green-400 font-mono flex items-center gap-1 font-bold">
+                                                        <Check size={12} /> {appliedReferral.code}
+                                                    </span>
+                                                ) : (
+                                                    activePromoTab === 'referral' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                                                )}
+                                            </button>
+                                            {activePromoTab === 'referral' && (
+                                                <div className="p-3 pt-0 border-t border-[#222]/50">
+                                                    {appliedReferral ? (
+                                                        <div className="flex items-center justify-between bg-[#d4af37]/10 p-2 rounded-lg border border-[#d4af37]/30 text-xs">
+                                                            <span className="text-gray-200">Referral <strong>{appliedReferral.code}</strong> aktif!</span>
+                                                            <button type="button" onClick={removeReferral} className="text-red-400 hover:text-red-300 font-bold text-[11px]">Hapus</button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Cth: AUROFANS"
+                                                                value={referralInput}
+                                                                onChange={(e) => setReferralInput(e.target.value.toUpperCase())}
+                                                                className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-1.5 text-xs font-mono uppercase text-white focus:outline-none focus:border-[#d4af37]"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                disabled={referralLoading}
+                                                                onClick={() => verifyReferralCode(referralInput)}
+                                                                className="px-3.5 py-1.5 bg-[#d4af37] text-black font-bold text-xs rounded-lg hover:bg-[#e5c04b] transition-colors flex items-center gap-1"
+                                                            >
+                                                                {referralLoading ? <Loader2 size={13} className="animate-spin" /> : 'Terapkan'}
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                    {referralError && <p className="text-red-400 text-[10px] mt-1.5">{referralError}</p>}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Accordion 3: Student / Partner OTP Voucher */}
+                                        <div className="border border-[#222] rounded-xl overflow-hidden bg-[#141414]">
+                                            <button
+                                                type="button"
+                                                onClick={() => setActivePromoTab(prev => prev === 'voucher' ? 'none' : 'voucher')}
+                                                className="w-full p-2.5 text-left flex items-center justify-between text-xs font-bold text-gray-300 hover:text-white transition-colors"
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    <Award size={13} className="text-[#d4af37]" /> Klaim Voucher Mahasiswa / Mitra
+                                                </span>
+                                                {voucherData ? (
+                                                    <span className="text-xs text-green-400 font-mono flex items-center gap-1 font-bold">
+                                                        <Check size={12} /> Terklaim
+                                                    </span>
+                                                ) : (
+                                                    activePromoTab === 'voucher' ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                                                )}
+                                            </button>
+                                            {activePromoTab === 'voucher' && (
+                                                <div className="p-3 pt-0 border-t border-[#222]/50">
+                                                    {voucherData ? (
+                                                        <div className="flex items-center justify-between bg-green-500/10 p-2 rounded-lg border border-green-500/30 text-xs">
+                                                            <span className="text-gray-200">Voucher <strong>{voucherData.programId}</strong> aktif!</span>
+                                                            <button type="button" onClick={() => { setVoucherData(null); setVoucherClaimKey(k => k + 1); }} className="text-red-400 hover:text-red-300 font-bold text-[11px]">Hapus</button>
+                                                        </div>
+                                                    ) : (
+                                                        <VoucherClaim 
+                                                            key={voucherClaimKey}
+                                                            onVoucherApplied={(data) => {
+                                                                setVoucherData(data);
+                                                                if (data) {
+                                                                    setSelectedDiscount(null);
+                                                                    setProofFile(null);
+                                                                }
+                                                            }} 
+                                                            initialPhone={formData.phone} 
+                                                        />
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
 
+                                    {/* 6. RINGKASAN PEMBAYARAN */}
+                                    <div className="p-4 rounded-2xl bg-[#141414] border border-[#d4af37]/20 space-y-2 text-xs">
+                                        <div className="flex justify-between text-gray-400">
+                                            <span>Layanan & Kapster</span>
+                                            <span className="text-white font-medium">{formData.service || '-'} • {formData.barber || '-'}</span>
+                                        </div>
+                                        <div className="flex justify-between text-gray-400">
+                                            <span>Jadwal Kedatangan</span>
+                                            <span className="text-white font-medium">{formData.date} • <strong className="text-[#d4af37] font-mono">{formData.time || '-'} WIB</strong></span>
+                                        </div>
+
+                                        {calculatedDiscount > 0 && (
+                                            <div className="flex justify-between text-emerald-400 font-semibold pt-1">
+                                                <span>Potongan Diskon / Promo</span>
+                                                <span className="font-mono">-{formatCurrency(calculatedDiscount)}</span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center pt-2 border-t border-[#262626] font-bold text-white">
+                                            <span className="text-xs uppercase tracking-wider">Total Pembayaran</span>
+                                            <span className="text-base font-mono text-[#d4af37]">{formatCurrency(grandTotal)}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* SUBMIT BUTTON */}
                                     <button
                                         disabled={loading}
                                         type="submit"
-                                        className="gold-button w-full flex items-center justify-center gap-2"
+                                        className="gold-button w-full !py-4 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl"
                                     >
                                         {loading ? (
-                                            <motion.div
-                                                animate={{ rotate: 360 }}
-                                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                                className="w-5 h-5 border-2 border-black border-t-transparent rounded-full"
-                                            />
+                                            <>
+                                                <Loader2 className="animate-spin" size={16} />
+                                                <span>Menerbitkan Tiket...</span>
+                                            </>
                                         ) : (
-                                            'KONFIRMASI BOOKING'
+                                            <span>Konfirmasi & Ambil Tiket Sekarang ✨</span>
                                         )}
                                     </button>
                                 </form>
-                            </>
-                        )}
+                            )}
+                        </div>
                     </motion.div>
                 </div>
             )}
