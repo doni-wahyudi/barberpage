@@ -217,22 +217,60 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
         });
     };
 
+    const isDateHoliday = (dateStr) => {
+        if (!dateStr || !settings?.daily_hours) return false;
+        const d = new Date(dateStr + 'T00:00:00');
+        const dayOfWeek = d.getDay();
+        const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+        return daySchedule ? daySchedule.isHoliday : false;
+    };
+
     const getPickerHoursForDate = (dateStr) => {
         const d = new Date(dateStr + 'T00:00:00');
         const dayOfWeek = d.getDay();
         const daySchedule = settings?.daily_hours?.find(ds => ds.dayOfWeek === dayOfWeek);
-        if (!daySchedule || daySchedule.isHoliday) return { start: '09:00', end: '21:00' };
+        if (!daySchedule || daySchedule.isHoliday) {
+            return { start: null, end: null, isHoliday: true, dayName: daySchedule?.dayName || 'ini' };
+        }
         
         return {
             start: daySchedule.openingHour || '09:00',
-            end: daySchedule.closingHour || '21:00'
+            end: daySchedule.closingHour || '21:00',
+            isHoliday: false,
+            dayName: daySchedule.dayName
         };
     };
 
-    const { start: pickerStartTime, end: pickerEndTime } = getPickerHoursForDate(formData.date);
+    const { start: pickerStartTime, end: pickerEndTime, isHoliday: isPickerHoliday, dayName: pickerDayName } = getPickerHoursForDate(formData.date);
+
+    // Auto-adjust date if current selected date is set to a holiday
+    useEffect(() => {
+        if (settings?.daily_hours && settings.daily_hours.length > 0) {
+            const d = new Date(formData.date + 'T00:00:00');
+            const dayOfWeek = d.getDay();
+            const daySchedule = settings.daily_hours.find(ds => ds.dayOfWeek === dayOfWeek);
+            if (daySchedule && daySchedule.isHoliday) {
+                let cur = new Date(formData.date + 'T00:00:00');
+                for (let i = 0; i < 7; i++) {
+                    const dow = cur.getDay();
+                    const sched = settings.daily_hours.find(ds => ds.dayOfWeek === dow);
+                    if (sched && !sched.isHoliday) {
+                        const year = cur.getFullYear();
+                        const month = String(cur.getMonth() + 1).padStart(2, '0');
+                        const day = String(cur.getDate()).padStart(2, '0');
+                        setFormData(prev => ({ ...prev, date: `${year}-${month}-${day}`, time: '' }));
+                        break;
+                    }
+                    cur.setDate(cur.getDate() + 1);
+                }
+            }
+        }
+    }, [settings]);
 
     // Generate quick time slot pill options based on store opening hours
     const availableTimeSlots = useMemo(() => {
+        if (isPickerHoliday || !pickerStartTime || !pickerEndTime) return [];
+
         const [startH, startM] = pickerStartTime.split(':').map(Number);
         const [endH, endM] = pickerEndTime.split(':').map(Number);
         const startMins = startH * 60 + startM;
@@ -245,7 +283,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
             slots.push(`${String(h).padStart(2, '0')}:${String(mins).padStart(2, '0')}`);
         }
         return slots;
-    }, [pickerStartTime, pickerEndTime]);
+    }, [pickerStartTime, pickerEndTime, isPickerHoliday]);
 
     // Fetch existing bookings for selected date and barber
     useEffect(() => {
@@ -450,6 +488,15 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
 
         if (!formData.date) {
             setFormError('Silakan pilih tanggal booking.');
+            return;
+        }
+
+        // Validate that chosen date is not a holiday
+        const bookingDateObj = new Date(formData.date + 'T00:00:00');
+        const bookingDayOfWeek = bookingDateObj.getDay();
+        const daySchedule = settings?.daily_hours?.find(ds => ds.dayOfWeek === bookingDayOfWeek);
+        if (daySchedule && daySchedule.isHoliday) {
+            setFormError(`Mohon maaf, Auro Barbershop libur / tutup pada hari ${daySchedule.dayName}. Silakan pilih tanggal lain.`);
             return;
         }
 
@@ -863,21 +910,56 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                             <div className="space-y-2">
+                                                {/* Quick Date Buttons with Holiday check */}
                                                 <div className="flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, date: todayStr, time: '' })}
-                                                        className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors ${formData.date === todayStr ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#161616] text-gray-300 border-[#2a2a2a] hover:border-[#d4af37]/50'}`}
-                                                    >
-                                                        Hari Ini
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setFormData({ ...formData, date: tomorrowStr, time: '' })}
-                                                        className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors ${formData.date === tomorrowStr ? 'bg-[#d4af37] text-black border-[#d4af37]' : 'bg-[#161616] text-gray-300 border-[#2a2a2a] hover:border-[#d4af37]/50'}`}
-                                                    >
-                                                        Besok
-                                                    </button>
+                                                    {(() => {
+                                                        const todayIsHoliday = isDateHoliday(todayStr);
+                                                        const tomorrowIsHoliday = isDateHoliday(tomorrowStr);
+                                                        return (
+                                                            <>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={todayIsHoliday}
+                                                                    onClick={() => {
+                                                                        if (todayIsHoliday) {
+                                                                            alert('Mohon maaf, Auro Barbershop libur / tutup hari ini.');
+                                                                            return;
+                                                                        }
+                                                                        setFormData({ ...formData, date: todayStr, time: '' });
+                                                                    }}
+                                                                    className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors ${
+                                                                        todayIsHoliday 
+                                                                            ? 'opacity-40 cursor-not-allowed bg-[#141414] text-gray-500 border-[#222]' 
+                                                                            : formData.date === todayStr 
+                                                                                ? 'bg-[#d4af37] text-black border-[#d4af37]' 
+                                                                                : 'bg-[#161616] text-gray-300 border-[#2a2a2a] hover:border-[#d4af37]/50'
+                                                                    }`}
+                                                                >
+                                                                    Hari Ini {todayIsHoliday ? '(Libur)' : ''}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={tomorrowIsHoliday}
+                                                                    onClick={() => {
+                                                                        if (tomorrowIsHoliday) {
+                                                                            alert('Mohon maaf, Auro Barbershop libur / tutup besok.');
+                                                                            return;
+                                                                        }
+                                                                        setFormData({ ...formData, date: tomorrowStr, time: '' });
+                                                                    }}
+                                                                    className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border transition-colors ${
+                                                                        tomorrowIsHoliday 
+                                                                            ? 'opacity-40 cursor-not-allowed bg-[#141414] text-gray-500 border-[#222]' 
+                                                                            : formData.date === tomorrowStr 
+                                                                                ? 'bg-[#d4af37] text-black border-[#d4af37]' 
+                                                                                : 'bg-[#161616] text-gray-300 border-[#2a2a2a] hover:border-[#d4af37]/50'
+                                                                    }`}
+                                                                >
+                                                                    Besok {tomorrowIsHoliday ? '(Libur)' : ''}
+                                                                </button>
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
                                                 <div className="relative">
                                                     <Calendar size={15} className="absolute left-3 top-3 text-[#d4af37]" />
@@ -892,6 +974,7 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                             const daySchedule = settings?.daily_hours?.find(ds => ds.dayOfWeek === dayOfWeek);
                                                             if (daySchedule && daySchedule.isHoliday) {
                                                                 alert(`Mohon maaf, Auro Barbershop libur pada hari ${daySchedule.dayName}.`);
+                                                                setFormData({ ...formData, date: e.target.value, time: '' });
                                                                 return;
                                                             }
                                                             setFormData({ ...formData, date: e.target.value, time: '' });
@@ -902,9 +985,19 @@ const BookingModal = ({ isOpen, onClose, initialData }) => {
                                                 </div>
                                             </div>
 
-                                            {/* Time slots container */}
+                                            {/* Time slots container or Holiday Notice */}
                                             <div>
-                                                {pickerMode === 'grid' ? (
+                                                {isPickerHoliday ? (
+                                                    <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-center space-y-1">
+                                                        <div className="flex items-center justify-center gap-1.5 text-red-400 font-bold text-xs">
+                                                            <AlertCircle size={15} />
+                                                            <span>Auro Barbershop Libur / Tutup ({pickerDayName})</span>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 leading-relaxed">
+                                                            Operasional tutup pada hari ini. Silakan ganti tanggal lain.
+                                                        </p>
+                                                    </div>
+                                                ) : pickerMode === 'grid' ? (
                                                     <div className="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-[140px] overflow-y-auto pr-1 custom-scrollbar">
                                                         {availableTimeSlots.map(slot => {
                                                             const isBooked = isSlotBooked(slot);

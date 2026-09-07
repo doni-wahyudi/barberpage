@@ -53,6 +53,21 @@ export function useStoreSettings() {
         };
 
         fetchSettings();
+
+        const channel = supabase
+            .channel('public:settings')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'settings' },
+                () => {
+                    fetchSettings();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     return { settings, loading };
